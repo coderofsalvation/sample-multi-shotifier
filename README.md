@@ -12,7 +12,55 @@ Breath new life into your hardware/software samplers by using multishots + start
 
 ### How it works ###
 
-This is a *directorybased* sample-utility which can glue samplefiles together into one samplefile. This file can be used in old/new hardware/software samplers. This only works well if your sampler supports setting the samplestart-offset-parameter on-the-fly. For example, your sample startposition-knob goes from 0..127, then you can navigate thru 127 samples if you generate a sample which contains 127 samples (with the same length..hence the trim-feature). Hope this makes sense, if not, just try it and you'll get the idea :)
+This is a *directorybased* sample-utility which can glue samplefiles together into one samplefile. This file can be used in old/new hardware/software samplers. This only works well if your sampler supports setting the samplestart-offset-parameter on-the-fly. For example, the startposition-knob on your sampler goes from 0..127. In theory this means you can navigate thru 127 samples if you generate a sample which contains 127 samples (with the same length..hence the trim-feature). Hope this makes sense, if not, check out this sexy ascii art:
+
+    Normally you would load one sample into one sample slot:
+
+    0                                                127
+    +-------------------------------------------------+
+    | yeeeeeeeeeeeaaaaaaaaaaaaaaaaaaaaaaaaaahhh!!!!!!!|
+    +-------------------------------------------------+
+
+
+
+    Ok now suppose a sample like this:
+
+    0      1      2      3      4                      127
+    +---------------------------------------------------+
+    |yeah! |ooh!  |funky!|hello!|    .. (and so on)     |
+    +---------------------------------------------------+
+           ^     ^-- bit of silence, takes up a bit of samplememory 
+           |
+           +----------------- Assuming your sampler startpositionknob ranges from 0 till 127:
+                              If you twist/set your startpositionknob to value 1, 
+                              then in theory you'll skip to the next sample
+
+
+In theory this means you can turn an old dusty hardware sampler with these specifications:
+
+    (st) sample tracks:                                                         11
+    (pm) sample possibilities per memoryslot                                    1
+    (sm) sample memoryslots:                                                    128      
+    (ms) max sequencer steps:                                                   128
+    (ps) possibilities of different samples playing per step:     (sm*pm)^st  = 151115727451828646838272 
+    (pp) possibilities of different samples playing per pattern:       ps^ms  = big
+
+Into a beast with these specs:
+    
+    (st) sample tracks:                                                         11
+    (pm) sample possibilities per memoryslot                                    128
+    (sm) sample memoryslots:                                                    128      
+    (ms) max sequencer steps:                                                   128
+    (ps) possibilities of different samples playing per step:     (sm*pm)^st  = 22835963083295358096932575511191922182123945984
+    (pp) possibilities of different samples playing per pattern:       ps^ms  = HUGE!HUGE!HUGE!
+
+### Pros/Cons ###
+
+* Pros: This gives a totally new dimension to your sampler.
+* Cons: it can cost a bit more samplememory since the samples need to be padded properly
+
+The sample-multi-shotifier includes a (non-lossless) pitch-up-feature which can save samplememory, so its up
+to you in which area you will suffer samplememory.
 
 ### Requirements ###
 
