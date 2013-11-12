@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Multishotifier</title>
+
+    <link href="css/toast.css" rel="stylesheet">
+    <style type="text/css"> 
+      html { padding:1.0em; font: 100%/1.5 Helvetica Neue,Helvetica,Arial,sans-serif; }
+      input,button { font-size: 16px; }
+      label { width:38%; display:block; float:left }
+      input { width:50%; margin-bottom: 0.8em; }
+      input[type=number] { width:80px; }  
+      input[type=checkbox] { width:20px }  
+      div.console { border: 1px solid #888; overflow:scroll; margin-bottom:15px }
+      div.console pre {
+        font-size: 11px;
+        color: #CCC;
+      }
+      input[type=submit], button { padding:1.0em }
+      div.console pre, div.console{ background-color:#555; }
+      .limit { width:50% }
+    </style>
+  </head>
+
+  <body>
+    <div class="grid">
+        <div class="unit span-grid">
+          <center>
+            <h1>
+              <a id="menu-toggle" href="#" class="btn btn-default"><i class="icon-reorder"></i></a>
+              Multishotifier
+            </h1>
+             <p class="limit lead">Breath new life into your hardware/software samplers by using multishots + start-sample-offset-parameter. Combine all samples to one wavefile, and expand your 1-sample-per-midichannel device into a xxx-sample-per-midichannel device. For example, on the <a href="http://www.soundonsound.com/sos/mar04/articles/korgesx1.htm" target="_blank">electribe ESX</a> one can have 127 samples on one drumtrack using this utility.<br>(Only requirement is having <a href="http://sox.sourceforge.net" target="_blank">SOX utilities</a> installed)</br>
+            </p>
+          </center>
+        </div>
+        <div class="unit span-grid">
+          <center>
+            <img id="logo" src="image/logo.jpg"/>
+            <br><bR>
+            <a style="font-size:30px" href="multishot.html">CONTINUE</a>
+          </center>
+        </div>
+    </div>
+    <script type="text/javascript">
+      // *HACK* nc resets the connection because its in a bashloop
+      //        we need to do poor-man's-delayed-loading to get the timing right :)
+      setTimeout( function(){
+        document.getElementById("logo").src += "";
+      }, 300 );
+    </script>
+  </body>
+</html>

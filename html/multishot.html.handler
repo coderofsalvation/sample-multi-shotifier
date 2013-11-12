@@ -1,0 +1,75 @@
+#!/bin/bash
+source "html/functions.bash"
+page="$(cat - )"; method="$1"; url="$2"; args="$3"; logfile="$4.log"
+
+# default template vars
+directory="$(getArg "directory" "$args")";      [[ ${#directory}  == 0 ]] && directory="/tmp"
+outfile="$(getArg "outfile" "$args")";          [[ ${#outfile}    == 0 ]] && outfile="/tmp/multishot.wav"
+nfiles="$(getArg "nfiles" "$args")";            [[ ${#nfiles}     == 0 ]] && nfiles=16
+nstartfile="$(getArg "nstartfile" "$args")";    [[ ${#nstartfile} == 0 ]] && nstartfile=0
+pitchup="$(getArg "pitchup" "$args")";          [[ ${#pitchup} == 0 ]] && pitchup="1.0"
+normalize="$(getArg "normalize" "$args")";      [[ ${#normalize} == 0 ]] && normalize="checked=checked"
+sampleframes="$(getArg "sampleframes" "$args")";[[ ${#sampleframes} == 0 ]] && sampleframes=999999
+sampletrim="$(getArg "sampletrim" "$args")";    [[ ${#sampletrim} == 0 ]] && sampletrim="00:00.15"
+recursive="$(getArg "recursive" "$args")";      [[ ${#recursive} == 0 ]] && recursive="checked=checked"
+mono="$(getArg "mono" "$args")";                [[ ${#mono} == 0 ]] && mono="checked=checked"
+soxextra="$(getArg "soxextra" "$args")";        [[ ${#soxextra} == 0 ]] && soxextra="contrast 100"
+
+templatify(){
+  cat - |  sed "s|%directory%|$directory|g" | sed "s|%outfile%|$outfile|g" | \
+           sed "s|%nfiles%|$nfiles|g"       | sed "s|%nstartfile%|$nstartfile|g" | \
+           sed "s|%pitchup%|$pitchup|g"     | sed "s|%normalize%|$normalize|g" | \
+           sed "s|%sampleframes%|$sampleframes|g" | sed "s|%sampletrim%|$sampletrim|g" | \
+           sed "s|%recursive%|$recursive|g" | sed "s|%mono%|$mono|g" | sed "s|%soxextra%|$soxextra|g"
+}
+
+# other
+
+runsox(){
+  files=0; dir="$1"; outfile="$2"; nfiles="$3"; nstartfile="$4"; pitchup="$5"; 
+  normalize="$6"; maxlength="$7"; trim="$8"; recursive="$9"; mono="$10"; soxextra="${11}"
+  [[ ${#normalize} != 0 ]] && normalize="--norm"
+  [[ ${#mono} != 0 ]] && mono="-c 1"
+  echo "./runsox $dir $outfile $nfiles $nstartfile $pitchup $normalize $maxlength $trim $recursive $mono $soxextra"
+  normalize="$6"; maxlength="$7"; files=0; [[ ${#normalize} != 0 ]] && normalize="--norm"
+  echo "$dir" | grep "\*\." &>/dev/null && dir="$(dirname "$dir")";
+  cd "$dir"; echo "cd'ing to $(pwd)"; offset=0
+  [[ ${#recursive} != 0 ]] && listcmd="find -L $dir \-name '*wav'" || listcmd="ls *.wav"
+  [[ -f "$outfile" ]] && rm "$outfile"
+  ${listcmd} | tail -n+$nstartfile | while read wavfile; do
+    echo "checking $wavfile ($samples samples < $maxlength, files/nfiles: $files/$nfiles)"
+    samples="$(soxi "$wavfile" | grep Duration | cut -d' ' -f11 )"
+    if [[ ${#samples} > 0 ]] && 
+       (( "$samples" < "$maxlength" )) && (( $files < $nfiles )); then
+      echo "processing $wavfile"; name="$(basename "$wavfile")"
+      sox "$wavfile" $normalize -c 2 -e signed -b 16 -r 44100 "/tmp/$name.wav" trim 0 $trim
+      ((files=files+1))
+    fi
+    if (( $files >= $nfiles )); then break; fi 
+  done
+  cd /tmp
+  echo sox *.wav.wav $mono $outfile speed "$pitchup" ${soxextra}
+  sox *.wav.wav $mono $outfile speed "$pitchup" ${soxextra}
+  rm *.wav.wav
+  echo "written $outfile ($(stat -c%s "$outfile") bytes)"
+}
+
+# lets handle!
+action="$(getArg "action" "$args")"
+case $action in
+
+  play)
+                aplay "$outfile" &>/dev/null &
+                echo "$page" 
+                ;;
+
+  write)        
+                output="$(runsox "$directory" "$outfile" "$nfiles" "$nstartfile" "$pitchup" "$normalize" "$sampleframes" "$sampletrim" "$recursive" "$mono" "$soxextra" 2>&1 | tee -a "$logfile")"
+                echo "$page" | \
+                replace '<!--output-->' "<div class='unit span-grid console'><pre>$output</pre></div>"
+                ;;
+
+  *)            echo "$page" | grep -v playfile
+                ;;
+
+esac | templatify
