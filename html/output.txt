@@ -1,7 +1,0 @@
-flopje!
-
-<script type="text/javascript">
-setInterval(function(){
-      document.getElementById("myframe").src+="";
-},1000);
-</script>
