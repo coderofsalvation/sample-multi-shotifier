@@ -50,11 +50,11 @@ runsox(){
 }
 
 # lets handle!
-action="$(getArg "action" "$args")"
-case $action in
+case "${args["action"]}" in
 
   play)
-                aplay "$outfile" &>/dev/null &
+                echo "playing "${args["outfile"]}""
+                aplay "${args["outfile"]}" &>/dev/null &
                 echo "$page" 
                 ;;
 

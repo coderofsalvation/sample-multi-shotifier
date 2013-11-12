@@ -1,6 +1,7 @@
 #!/bin/bash
 TMPFILE="/tmp/.bashweb.$(whoami)"
 PORT=8000
+pid=$$
 
 start(){
    [[ -n "$1" ]] && PORT="$1"; TMPFILE="$TMPFILE.$PORT"; [[ ! -p $TMPFILE ]] && mkfifo "$TMPFILE"
@@ -14,7 +15,7 @@ start(){
        url="$(echo "$message" | sed 's/GET //g;s/POST //g;s/DELETE //g;s/PUT //g;s/ HTTP.*//g')"
        echo "$method $url" | logmsg in
        echo -e "HTTP/1.1 200 OK\r\n"  | logmsg out
-       $0 onUrl "$method" "$url" "$TMPFILE"
+       reply="$( $0 onUrl "$method" "$url" "$TMPFILE" )"; [[ "$reply" == "quit" ]] && kill -9 $pid || echo "$reply"
      } | nc -v -l $PORT > $TMPFILE | tee -a $TMPFILE.log
    done
 }
@@ -34,6 +35,9 @@ onUrl(){
     /log)     echo "<html><body><pre>$(tail -n15 "$3.log")</pre></body></html>"
               ;;
 
+    /quit)    echo "quit";
+              ;;
+
     *)        [[ -f "$file" ]] && serveFile "$file" "$method" "$url" "$args" "$tmpfile" || 
                 echo "bashwapp> $file not found"
               ;;
@@ -43,8 +47,8 @@ onUrl(){
 serveFile(){
   file="$1"; [[ ! -f "$file" ]] && echo "file $file not found" && return 1
   if [[ -f "$file.handler" ]]; then                      # and if a file(.handler) file is found
-    echo "cat $file | $file.handler $2 $3 $4" >> $4.log
-    cat "$file" | $file.handler "$2" "$3" "$4" 2>&1      # output the file and filter using handler
+    echo "cat $file | $file.handler $2 $3 $4 $5" >> "$5.log"
+    cat "$file" | $file.handler "$2" "$3" "$4" "$5" 2>&1      # output the file and filter using handler
   else cat "$file"; fi # or just output the file (images/css/eg)
 }
 

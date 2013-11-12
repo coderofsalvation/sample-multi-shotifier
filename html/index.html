@@ -10,7 +10,17 @@
 
     <link href="css/toast.css" rel="stylesheet">
     <style type="text/css"> 
-      html { padding:1.0em; font: 100%/1.5 Helvetica Neue,Helvetica,Arial,sans-serif; }
+      html { padding:1.0em; font: 100%/1.5 Helvetica Neue,Helvetica,Arial,sans-serif;
+        background: #f5f6f6; /* Old browsers */
+        background: -moz-linear-gradient(top, #f5f6f6 0%, #dbdce2 21%, #b8bac6 49%, #dddfe3 80%, #f5f6f6 100%); /* FF3.6+ */
+        background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#f5f6f6), color-stop(21%,#dbdce2), color-stop(49%,#b8bac6), color-stop(80%,#dddfe3), color-stop(100%,#f5f6f6)); /* Chrome,Safari4+ */
+        background: -webkit-linear-gradient(top, #f5f6f6 0%,#dbdce2 21%,#b8bac6 49%,#dddfe3 80%,#f5f6f6 100%); /* Chrome10+,Safari5.1+ */
+        background: -o-linear-gradient(top, #f5f6f6 0%,#dbdce2 21%,#b8bac6 49%,#dddfe3 80%,#f5f6f6 100%); /* Opera 11.10+ */
+        background: -ms-linear-gradient(top, #f5f6f6 0%,#dbdce2 21%,#b8bac6 49%,#dddfe3 80%,#f5f6f6 100%); /* IE10+ */
+        background: linear-gradient(to bottom, #f5f6f6 0%,#dbdce2 21%,#b8bac6 49%,#dddfe3 80%,#f5f6f6 100%); /* W3C */
+        filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f5f6f6', endColorstr='#f5f6f6',GradientType=0 ); /* IE6-9 */
+      }
+      h1 a{ color:#555}
       input,button { font-size: 16px; }
       label { width:38%; display:block; float:left }
       input { width:50%; margin-bottom: 0.8em; }
@@ -23,36 +33,47 @@
       }
       input[type=submit], button { padding:1.0em }
       div.console pre, div.console{ background-color:#555; }
-      .limit { width:50% }
     </style>
   </head>
 
   <body>
+
     <div class="grid">
         <div class="unit span-grid">
-          <center>
-            <h1>
-              <a id="menu-toggle" href="#" class="btn btn-default"><i class="icon-reorder"></i></a>
-              Multishotifier
-            </h1>
-             <p class="limit lead">Breath new life into your hardware/software samplers by using multishots + start-sample-offset-parameter. Combine all samples to one wavefile, and expand your 1-sample-per-midichannel device into a xxx-sample-per-midichannel device. For example, on the <a href="http://www.soundonsound.com/sos/mar04/articles/korgesx1.htm" target="_blank">electribe ESX</a> one can have 127 samples on one drumtrack using this utility.<br>(Only requirement is having <a href="http://sox.sourceforge.net" target="_blank">SOX utilities</a> installed)</br>
-            </p>
-          </center>
+          <h1>
+            <a href="/">Multishotifier</a>
+          </h1>
         </div>
-        <div class="unit span-grid">
-          <center>
-            <img id="logo" src="image/logo.jpg"/>
-            <br><bR>
-            <a style="font-size:30px" href="multishot.html">CONTINUE</a>
-          </center>
+        <div class="unit one-of-two">
+              <form method="GET" action="/">
+                <input type="hidden" name="action" value="write"/>
+                <p class="well">
+                  <label>Input directory</label><input type="text" name="directory" value="%directory%"/><br>
+                  <label>Max files</label><input type="number" name="nfiles" value="%nfiles%"/><br>
+                  <label>Start file</label><input type="number" name="nstartfile" value="%nstartfile%"/><br>
+                  <label>Max duration per file</label><input type="number" name="sampleframes" value="%sampleframes%"/> &nbsp; Sampleframes<br>
+                  <label>Sampleframe trim</label><input type="text" name="sampletrim" value="%sampletrim%"/> <br>
+                  <label>Pitch up x times </label><input type="number" name="pitchup" value="%pitchup%" step="any"/> <br>
+                  <label>Normalize</label><input type="checkbox" %normalize%"/> <br>
+                  <label>Mono</label><input type="checkbox" %mono%"/> <br>
+                  <label>SOX extra</label><input type="text" name="soxextra" value="%soxextra%"/><br>
+                  <label>Recurse into dirs</label><input type="checkbox" %recursive%/> <br>
+<!--outputfile-->  <label>Output file</label><input type="text" name="outfile" value="%outfile%"/>
+                </p>
+<!--writefile--><input type="submit" class="download-links" value="Write file"/>
+              </form><br>
+       </div>
+<!--output-->
+<!--playfile--><div class="unit span-grid">
+<!--playfile-->  <a class="download-links" href="#" onclick="new Image().src = '/?action=play&outfile=%outfile%&directory=%directory%&nfiles=%nfiles%&nstartfile=%nstartfile%'; return false;">Play multishot</a>
+<!--playfile-->  <a class="download-links" href="file://%outfile%">Download</a><br><br>
+<!--playfile--></div>
+        <div class="unit one-of-four">
+              <p class="well"><b>Sampler tip #1:</b>Set 'max files'-value to the range of your 'start-sample-offset'-knob on your sampler, it will allow you to easily switch samples.<br><br><b>Sampler tip #2:</b>Pitching up audio is a trick to save samplespace on the electribe (just turn down the pitch on the electribe for playback). Please note that this
+ introduces a bitcrush sound on material with high frequencies.
+              </p>
         </div>
     </div>
-    <script type="text/javascript">
-      // *HACK* nc resets the connection because its in a bashloop
-      //        we need to do poor-man's-delayed-loading to get the timing right :)
-      setTimeout( function(){
-        document.getElementById("logo").src += "";
-      }, 300 );
-    </script>
+  
   </body>
 </html>
