@@ -20,10 +20,11 @@
         background: linear-gradient(to bottom, #f5f6f6 0%,#dbdce2 21%,#b8bac6 49%,#dddfe3 80%,#f5f6f6 100%); /* W3C */
         filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f5f6f6', endColorstr='#f5f6f6',GradientType=0 ); /* IE6-9 */
       }
-      h1 a{ color:#555}
-      input,button { font-size: 16px; }
+      h1 a{ color:#555; width:50%; float:left}
+      small { float:right}
+      input,button,select { font-size: 16px; }
       label { width:38%; display:block; float:left }
-      input { width:50%; margin-bottom: 0.8em; }
+      input,select { width:50%; margin-bottom: 0.8em; }
       input[type=number] { width:80px; }  
       input[type=checkbox] { width:20px }  
       div.console { border: 1px solid #888; overflow:scroll; margin-bottom:15px }
@@ -43,36 +44,41 @@
           <h1>
             <a href="/">Multishotifier</a>
           </h1>
+          <small><a href="https://github.com/coderofsalvation/sample-multi-shotifier" target="_blank">https://github.com/coderofsalvation/sample-multi-shotifier</a></small>
+          <br><br>
         </div>
         <div class="unit one-of-two">
-              <form method="GET" action="/">
+              <form method="GET" action="/" id="form">
                 <input type="hidden" name="action" value="write"/>
                 <p class="well">
-                  <label>Input directory</label><input type="text" name="directory" value="%directory%"/><br>
+                  <label>Root rootdirectory</label><input type="text" name="rootdirectory" id="rootdirectory" onchange="document.location.href = '/?rootdirectory='+this.value;" value="%rootdirectory%"/><br>
+                  <label>Target directory</label>
+                    <select id="directory" name="directory">
+                      %directory%
+                    </select>
+                  <br>
                   <label>Max files</label><input type="number" name="nfiles" value="%nfiles%"/><br>
                   <label>Start file</label><input type="number" name="nstartfile" value="%nstartfile%"/><br>
                   <label>Max duration per file</label><input type="number" name="sampleframes" value="%sampleframes%"/> &nbsp; Sampleframes<br>
-                  <label>Sampleframe trim</label><input type="text" name="sampletrim" value="%sampletrim%"/> <br>
+                  <label>Trim (startpos length)</label><input type="text" name="sampletrim" value="%sampletrim%"/> <br>
                   <label>Pitch up x times </label><input type="number" name="pitchup" value="%pitchup%" step="any"/> <br>
                   <label>Normalize</label><input type="checkbox" %normalize%"/> <br>
                   <label>Mono</label><input type="checkbox" %mono%"/> <br>
                   <label>SOX extra</label><input type="text" name="soxextra" value="%soxextra%"/><br>
                   <label>Recurse into dirs</label><input type="checkbox" %recursive%/> <br>
-<!--outputfile-->  <label>Output file</label><input type="text" name="outfile" value="%outfile%"/>
+<!--outputfile--> <label>Output file</label><input type="text" name="outfile" value="%outfile%"/>
                 </p>
 <!--writefile--><input type="submit" class="download-links" value="Write file"/>
+<!--playfile-->  <a class="download-links" href="#" onclick="new Image().src = '/?action=play&outfile=%outfile%&directory='+document.getElementById('directory').value+'&nfiles=%nfiles%&nstartfile=%nstartfile%'; return false;">Play multishot</a>
+<!--playfile-->  <a class="download-links" href="file://%outfile%">Download</a><br><br>
               </form><br>
        </div>
-<!--output-->
-<!--playfile--><div class="unit span-grid">
-<!--playfile-->  <a class="download-links" href="#" onclick="new Image().src = '/?action=play&outfile=%outfile%&directory=%directory%&nfiles=%nfiles%&nstartfile=%nstartfile%'; return false;">Play multishot</a>
-<!--playfile-->  <a class="download-links" href="file://%outfile%">Download</a><br><br>
-<!--playfile--></div>
         <div class="unit one-of-four">
-              <p class="well"><b>Sampler tip #1:</b>Set 'max files'-value to the range of your 'start-sample-offset'-knob on your sampler, it will allow you to easily switch samples.<br><br><b>Sampler tip #2:</b>Pitching up audio is a trick to save samplespace on the electribe (just turn down the pitch on the electribe for playback). Please note that this
- introduces a bitcrush sound on material with high frequencies.
+              <p class="well"><b>Sampler tip #1:</b> Set 'max files'-value to the range of your 'start-sample-offset'-knob on your sampler, it will allow you to easily switch samples.<br><br><b>Sampler tip #2:</b> Pitching up audio is a trick to save samplespace on hardware samplers (just turn down the pitch on the sampler during playback). Please note that this
+ introduces a (sometimes desirable) bitcrush sound on material with high frequencies.<br><br><b>Sampler tip #3:</b>If your samplestart-knobrange varies from 0..127, set 'Max files' to 32 files for a directory of similar-length one-bar beatloops, to eventually have 4 bar-slices of each sample on your sampler (128/4).
               </p>
         </div>
+<!--output-->
     </div>
   
   </body>
