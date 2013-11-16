@@ -2,11 +2,11 @@
 source "html/functions.bash"
 page="$(cat - )"; method="$1"; url="$2"; args="$3"; logfile="$4.log"
 TMPFILE="/tmp/.sample-multi-shotifier"
-[[ ! -f $TMPFILE.rootdir ]] && touch $TMPFILE.rootdir
+#[[ ! -f $TMPFILE.rootdir ]] && echo "/tmp" > $TMPFILE.rootdir
 
 # declare variables, and initialize them with a default, or a GET webargument (if received from form)
 initArg "$args" "action"        ""
-initArg "$args" "rootdirectory" "$( [[ -f $TMPFILE.rootdir ]] && cat $TMPFILE.rootdir  || echo '/tmp')"
+initArg "$args" "rootdirectory" "/tmp"
 initArg "$args" "directory"     ""
 initArg "$args" "outfile"       "/tmp/multishot.wav"
 initArg "$args" "nfiles"        16
@@ -22,8 +22,8 @@ initArg "$args" "soxextra"      "sox %s %s contrast 100"
 # other functions
 
 getdirs(){
-  cache="$(cat $TMPFILE.rootdir)"
-  [[ "$1" == "$cache" ]] && cat $TMPFILE.diroptions && return 0;
+  cache="$( [[ -f $TMPFILE.rootdir ]] && cat $TMPFILE.rootdir )"
+  [[ "$1" == "$cache" ]] && [[ -f "$TMPFILE.diroptions" ]] && cat $TMPFILE.diroptions && return 0;
   find -L "$1" -type d -maxdepth 2 -not -path '*/\.*' 2>&1 | while read line; do 
     [[ "$2" == "$line" ]] && selected="selected=selected" || selected=""; 
     printf "<option $selected value=\"$line\">$line</option>"; 
@@ -65,8 +65,8 @@ runsox(){
 
 # lets handle!
 playdir="${args["directory"]}"
-echo "${args["rootdirectory"]}" > $TMPFILE.rootdir                   # cache rootdir for convenience
 args["directory"]="$(getdirs "${args["rootdirectory"]}" "$playdir")" # generate selectbox options
+echo "${args["rootdirectory"]}" > $TMPFILE.rootdir                   # cache rootdir for convenience
 
 case "${args["action"]}" in
 
