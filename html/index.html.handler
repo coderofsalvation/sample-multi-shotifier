@@ -6,24 +6,27 @@ TMPFILE="/tmp/.sample-multi-shotifier"
 
 # declare variables, and initialize them with a default, or a GET webargument (if received from form)
 initArg "$args" "action"        ""
-initArg "$args" "rootdirectory" "/tmp"
+initArg "$args" "rootdirectory" "$([[ -f $TMPFILE.rootdir ]] && cat $TMPFILE.rootdir || echo '/tmp')"
 initArg "$args" "directory"     ""
 initArg "$args" "outfile"       "/tmp/multishot.wav"
 initArg "$args" "nfiles"        16
 initArg "$args" "nstartfile"    0
 initArg "$args" "pitchup"       "1.0"
 initArg "$args" "sampleframes"  999999
-initArg "$args" "sampletrim"    "00:00.00 =00:00.15"
+initArg "$args" "sampletrim"    "00:00.00 =00:00.20"
 initArg "$args" "normalize"     "checked='checked'"
 initArg "$args" "recursive"     "checked='checked'"
 initArg "$args" "mono"          "checked='checked'"
-initArg "$args" "soxextra"      "sox %s %s contrast 100"
+initArg "$args" "soxextra"      "sox %s %s contrast 75"
 
 # other functions
 
 getdirs(){
   cache="$( [[ -f $TMPFILE.rootdir ]] && cat $TMPFILE.rootdir )"
-  [[ "$1" == "$cache" ]] && [[ -f "$TMPFILE.diroptions" ]] && cat $TMPFILE.diroptions && return 0;
+  if [[ "$1" == "$cache" ]] && [[ -f "$TMPFILE.diroptions" ]]; then
+    cat $TMPFILE.diroptions | sed "s|>$2|selected=selected >$2|g"
+    return 0;
+  fi
   find -L "$1" -type d -maxdepth 2 -not -path '*/\.*' 2>&1 | while read line; do 
     [[ "$2" == "$line" ]] && selected="selected=selected" || selected=""; 
     printf "<option $selected value=\"$line\">$line</option>"; 
@@ -41,14 +44,16 @@ runsox(){
   cd "$dir"; echo "cd'ing to $(pwd)"; offset=0
   [[ ${#recursive} != 0 ]] && listcmd="find -L . -name '*wav' -not -path '*/\.*'" || listcmd="ls *.wav"
   [[ -f "$outfile" ]] && rm "$outfile"
+  sox -n -e signed -b 16 -r 44100 -c 2 /tmp/silence.wav trim ${trim} # create silence file to enable exact padding
   eval "$listcmd" | tail -n+$nstartfile | while read wavfile; do
     wavfile="$(echo "$wavfile" | sed 's/\.\///g')"
     echo "checking $wavfile ($samples samples < $maxlength, files/nfiles: $files/$nfiles)"
     samples="$(soxi "$wavfile" | grep Duration | cut -d' ' -f11 )"
     if [[ ${#samples} > 0 ]] && 
        (( "$samples" < "$maxlength" )) && (( $files < $nfiles )); then
-      echo "processing $wavfile"; name="$(basename "$wavfile" | sed 's/WAV/wav/g')"
-      sox "$wavfile" $normalize -c 2 -e signed -b 16 -r 44100 "/tmp/$name.wav" trim ${trim}
+      echo "processing ($files) $wavfile"; name="$(basename "$wavfile" | sed 's/WAV/wav/g')"
+      sox "$wavfile" $normalize -c 2 -e signed -b 16 -r 44100 "/tmp/$name.trimmed.wav" trim ${trim}
+      sox -m /tmp/silence.wav "/tmp/$name.trimmed.wav" "/tmp/$name.wav"; rm "/tmp/$name.trimmed.wav" # pad wav
       ((files=files+1))
     fi
     if (( $files >= $nfiles )); then break; fi 
@@ -58,14 +63,14 @@ runsox(){
     sox *.wav.wav $mono $outfile speed "$pitchup" 
     extra="$( printf "$soxextra" "$outfile" "$outfile.wav")"; echo "$extra";
     ${extra}; mv "$outfile.wav" "$outfile"
-    rm *.wav.wav
+    rm silence.wav *.wav.wav
     echo "written $outfile ($(stat -c%s "$outfile") bytes)"
   else echo "no wavfiles found to glue to output file"; fi
 }
 
 # lets handle!
-playdir="${args["directory"]}"
-args["directory"]="$(getdirs "${args["rootdirectory"]}" "$playdir")" # generate selectbox options
+selecteddir="${args["directory"]}"
+args["directory"]="$(getdirs "${args["rootdirectory"]}" "$selecteddir")" # generate selectbox options
 echo "${args["rootdirectory"]}" > $TMPFILE.rootdir                   # cache rootdir for convenience
 
 case "${args["action"]}" in
@@ -78,7 +83,8 @@ case "${args["action"]}" in
                 ;;
 
   write)        
-                output="$(runsox "$playdir" \
+                echo "$selecteddir" > $TMPFILE.selecteddir
+                output="$(runsox "$selecteddir" \
                                  "${args["outfile"]}" \
                                  "${args["nfiles"]}" \
                                  "${args["nstartfile"]}" \
