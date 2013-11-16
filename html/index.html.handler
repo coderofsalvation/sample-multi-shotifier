@@ -24,7 +24,7 @@ initArg "$args" "soxextra"      "sox %s %s contrast 75"
 getdirs(){
   cache="$( [[ -f $TMPFILE.rootdir ]] && cat $TMPFILE.rootdir )"
   if [[ "$1" == "$cache" ]] && [[ -f "$TMPFILE.diroptions" ]]; then
-    cat $TMPFILE.diroptions | sed "s|>$2|selected=selected >$2|g"
+    cat $TMPFILE.diroptions | sed "s|>$2<|selected=selected >$2<|g"
     return 0;
   fi
   find -L "$1" -type d -maxdepth 2 -not -path '*/\.*' 2>&1 | while read line; do 

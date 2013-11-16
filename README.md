@@ -10,6 +10,11 @@ Breath new life into your hardware/software samplers by using multishots + start
 
 <img src="http://www.zimagez.com/full/21f7122ee557a157329a618ec91320d4faab8d24e80693de6924c0fb25bf0a9d2353c0c2c4e1fd0bd5f293e42232e60aba168cc19324ea02.php"/>
 
+### Why? ###
+
+In these days fiddling with hardware samplers can be cumbersome..swapping disks, copying stuff etc.
+With this tool you can just 'bake' a subset of your sample collection/directories to one file, and access them all at once on your sampler.
+
 ### How it works ###
 
 This is a *directorybased* sample-utility which can glue samplefiles together into one samplefile. This file can be used in old/new hardware/software samplers. This only works well if your sampler supports setting the samplestart-offset-parameter on-the-fly. For example, the startposition-knob on your sampler goes from 0..127. In theory this means you can navigate thru 127 samples if you generate a sample which contains 127 samples (with the same length..hence the trim-feature). Hope this makes sense, if not, check out this sexy ascii art:
