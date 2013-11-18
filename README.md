@@ -17,7 +17,7 @@ With this tool you can just 'bake' a subset of your sample collection/directorie
 
 ### How it works ###
 
-This is a *directorybased* sample-utility which can glue samplefiles together into one samplefile. This file can be used in old/new hardware/software samplers. This only works well if your sampler supports setting the samplestart-offset-parameter on-the-fly. For example, the startposition-knob on your sampler goes from 0..127. In theory this means you can navigate thru 127 samples if you generate a sample which contains 127 samples (with the same length..hence the trim-feature). Hope this makes sense, if not, check out this sexy ascii art:
+This is a *directorybased* sample-utility which can glue samplefiles together into one samplefile. This file can be used in old/new hardware/software samplers. This only works well if your sampler supports setting the samplestart-offset-parameter on-the-fly. For example, the startposition-knob on your sampler goes from 0..127. In theory this means you can navigate thru 128 samples if you generate a sample which contains 128 samples (with the same length..hence the trim-feature). Hope this makes sense, if not, check out this sexy ascii art:
 
     Normally you would load one sample into one sample slot:
 
@@ -32,7 +32,7 @@ This is a *directorybased* sample-utility which can glue samplefiles together in
 
     0      1      2      3      4                      127
     +---------------------------------------------------+
-    |yeah! |ooh!  |funky!|hello!|    .. (and so on)     |
+    |yeah! |ooh!  |funky!|hello!|    .. (and so on)     | = 128 samples :)
     +---------------------------------------------------+
            ^     ^-- bit of silence, takes up a bit of samplememory 
            |
