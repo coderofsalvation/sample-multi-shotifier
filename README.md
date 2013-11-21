@@ -5,7 +5,7 @@ hack which expands your traditional hardware/software samplers using many-sample
 
 ### Introduction ###
 
-Breath new life into your hardware/software samplers by using multishots + start-sample-offset-parameter. Combine all samples to one wavefile, and expand your 1-sample-per-midichannel device into a xxx-sample-per-midichannel device. For example, on the electribe ESX one can have 127 samples on one drumtrack using this utility.
+Breath new life into your hardware/software samplers by using multishots + start-sample-offset-parameter. Combine all samples to one wavefile, and expand your 1-sample-per-midichannel device into a xxx-sample-per-midichannel device. For example, on the electribe ESX one can have 128 samples on one drumtrack using this utility.
 (Only requirement is having SOX utilities installed)
 
 <img src="http://www.zimagez.com/full/21f7122ee557a157329a618ec91320d4faab8d24e80693de6924c0fb25bf0a9d2353c0c2c4e1fd0bd5f293e42232e60aba168cc19324ea02.php"/>
