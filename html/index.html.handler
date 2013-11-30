@@ -17,7 +17,10 @@ initArg "$args" "sampletrim"    "00:00.00 =00:00.20"
 initArg "$args" "normalize"     "checked='checked'"
 initArg "$args" "recursive"     "checked='checked'"
 initArg "$args" "mono"          "checked='checked'"
+initArg "$args" "slice"         " "
 initArg "$args" "soxextra"      "sox %s %s contrast 75"
+
+maxtrim="00:00.00 =00:10.00"
 
 # other functions
 
@@ -33,18 +36,17 @@ getdirs(){
   done | tee $TMPFILE.diroptions
 }
 
-runsox(){
-  files=0; dir="$1"; outfile="$2"; nfiles="$3"; nstartfile="$4"; pitchup="$5"; 
-  normalize="$6"; maxlength="$7"; trim="$8"; recursive="$9"; mono="$10"; soxextra="${11}"
+collect(){
+  files=0; dir="$1"; nfiles="$2"; nstartfile="$3"; normalize="$4"; maxlength="$5"; trim="$6"; recursive="$7"; 
+  [[ "$8" == " " ]] && doslice=0 || doslice=1
+  [[ ! -d /tmp/.collect ]] && mkdir /tmp/.collect || rm /tmp/.collect/*
+  [[ ! -d /tmp/.slices ]] && mkdir /tmp/.slices || rm /tmp/.slices/*
+  rm /tmp/.collect/*
   [[ ${#normalize} != 0 ]] && normalize="--norm"
-  [[ ${#mono} != 0 ]] && mono="-c 1"
-  echo "./runsox $dir $outfile $nfiles $nstartfile $pitchup $normalize $maxlength $trim $recursive $mono $soxextra"
-  normalize="$6"; maxlength="$7"; files=0; [[ ${#normalize} != 0 ]] && normalize="--norm"
+  echo "./collect $dir $nfiles $nstartfile $normalize $maxlength $trim $recursive"
   echo "$dir" | grep "\*\." &>/dev/null && dir="$(dirname "$dir")";
   cd "$dir"; echo "cd'ing to $(pwd)"; offset=0
   [[ ${#recursive} != 0 ]] && listcmd="find -L . -name '*wav' -not -path '*/\.*'" || listcmd="ls *.wav"
-  [[ -f "$outfile" ]] && rm "$outfile"
-  sox -n -e signed -b 16 -r 44100 -c 2 /tmp/silence.wav trim ${trim} # create silence file to enable exact padding
   eval "$listcmd" | tail -n+$nstartfile | while read wavfile; do
     wavfile="$(echo "$wavfile" | sed 's/\.\///g')"
     echo "checking $wavfile ($samples samples < $maxlength, files/nfiles: $files/$nfiles)"
@@ -52,20 +54,61 @@ runsox(){
     if [[ ${#samples} > 0 ]] && 
        (( "$samples" < "$maxlength" )) && (( $files < $nfiles )); then
       echo "processing ($files) $wavfile"; name="$(basename "$wavfile" | sed 's/WAV/wav/g')"
-      sox "$wavfile" $normalize -c 2 -e signed -b 16 -r 44100 "/tmp/$name.trimmed.wav" trim ${trim}
-      sox -m /tmp/silence.wav "/tmp/$name.trimmed.wav" "/tmp/$name.wav"; rm "/tmp/$name.trimmed.wav" # pad wav
-      ((files=files+1))
+      # if slices is enabled, disable the trim (and set to maxtrim to prevent long waiting times)
+      (( $doslice == 1 )) && pretrim=$maxtrim || pretrim=$trim
+      sox "$wavfile" $normalize -c 2 -e signed -b 16 -r 44100 "/tmp/.collect/$name.trimmed.wav" trim ${pretrim}
+      if (( $doslice == 1 )); then 
+        slice "/tmp/.collect/$name.trimmed.wav" /tmp/.slices "$trim"
+        files=$(ls -1 /tmp/.slices | wc -l )
+      else ((files=files+1)); fi
     fi
     if (( $files >= $nfiles )); then break; fi 
   done
-  cd /tmp
-  if ls *.wav.wav &>/dev/null; then 
-    sox *.wav.wav $mono $outfile speed "$pitchup" 
+}
+
+padsample(){
+  inputfile="$1"; trim="$2"; normalize="$3"
+  [[ ${#normalize} != 0 ]] && normalize="--norm"
+  silencefile="/tmp/.collect/multishotsilence.$(echo "$trim" | sed 's/ /-/g').wav"
+  [[ ! -f "$silencefile" ]] && sox -n -e signed -b 16 -r 44100 -c 2 "$silencefile" trim ${trim} # create silence file to enable exact padding
+  sox -m "$silencefile" "$inputfile" "$inputfile.padded.wav" $normalize # pad wav
+  echo "padding sample $inputfile to $trim"
+}
+
+bundle(){
+  indir="$1"; outfile="$2"; mono="$3"; pitchup="$4"; soxextra="${5}"; trim="$6"; normalize="$7"
+  [[ ${#mono} != 0 ]] && mono="-c 1"
+  cd "$indir"
+  rm *.padded.wav &>/dev/null
+  ls *.wav | while read file; do padsample "$file" "$trim" "$normalize"; done
+  if ls *.padded.wav &>/dev/null; then 
+    sox *.padded.wav $mono $outfile speed "$pitchup" 
     extra="$( printf "$soxextra" "$outfile" "$outfile.wav")"; echo "$extra";
     ${extra}; mv "$outfile.wav" "$outfile"
-    rm silence.wav *.wav.wav
     echo "written $outfile ($(stat -c%s "$outfile") bytes)"
   else echo "no wavfiles found to glue to output file"; fi
+  rm *.padded.wav
+}
+
+slice(){
+  input="$1"; outdir="$2"; trim="$3"
+  which bc &>/dev/null || { echo "please install 'bc' from your package manager"; exit 1; }
+  which vamp-simple-host &>/dev/null || { echo "please install 'vamp-examples' from your package manager"; exit 1; }
+  hits="$(vamp-simple-host vamp-example-plugins:percussiononsets "$input" 2>/dev/null | grep -E " [0-9].*" | sed 's/ //g;s/://g')";
+  declare -a hitArray; last=""; i=0
+  IFS='
+  ' # set field seperator to newlines
+  for hit in $hits; do hitArray[$i]=$hit; ((i++)); done
+  for((i=0;i<${#hitArray[@]}-1;i++)); do
+    hit=${hitArray[$i]}
+    hitnext=${hitArray[$i+1]}
+    length="$( echo "($hitnext-$hit)" | bc )"; [[ ${length:0:1} == "." ]] && length="0$length"
+    # shift sample into the past a bit to avoid clicksounds on bassdrums (prevent too extreme cut)
+    (( $i > 0 )) && hit="$(echo "$hit" | bc )";[[ ${hit:0:1} == "." ]] && hit="0$hit"
+    outfile="$outdir/$(basename "$input.slice-$i.wav" )"
+    echo "writing $outfile slice #$i"
+    sox "$input" "$outfile" trim $hit $length trim ${trim} # fade t 0 $length 0.02
+  done
 }
 
 # lets handle!
@@ -84,22 +127,32 @@ case "${args["action"]}" in
 
   write)        
                 echo "$selecteddir" > $TMPFILE.selecteddir
-                output="$(runsox "$selecteddir" \
-                                 "${args["outfile"]}" \
+                output="$(collect "$selecteddir" \
                                  "${args["nfiles"]}" \
                                  "${args["nstartfile"]}" \
-                                 "${args["pitchup"]}" \
                                  "${args["normalize"]}" \
                                  "${args["sampleframes"]}" \
                                  "${args["sampletrim"]}" \
                                  "${args["recursive"]}" \
-                                 "${args["mono"]}" \
-                                 "${args["soxextra"]}" \
-                                 2>&1 | tee -a "$logfile")"
+                                 "${args["slice"]}" \
+                                 2>&1 | tee -a "$logfile" 2>&1 )"
+                if [[ ! ${args["slice"]} == " " ]]; then 
+                  indir="/tmp/.slices"
+                else
+                  indir="/tmp/.collect"
+                fi 
+                output="$output $(bundle "$indir" \
+                                         "${args["outfile"]}"  \
+                                         "${args["mono"]}" \
+                                         "${args["pitchup"]}" \
+                                         "${args["soxextra"]}" \
+                                         "${args["sampletrim"]}"  \
+                                         "${args["normalize"]}" 2>&1 )"  
+
                 echo "$page" | replace '<!--output-->' "<div class='unit span-grid console'><pre>$output</pre></div>"
                 ;;
 
   *)            echo "$page" | grep -v playfile
                 ;;
 
-esac | templatify
+esac | templatify | sed 's/ on\/>/checked="checked"\/>/g' # quickndirty checkbox fix *UGLY*

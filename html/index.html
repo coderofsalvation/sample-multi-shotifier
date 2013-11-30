@@ -51,31 +51,32 @@
               <form method="GET" action="/" id="form">
                 <input type="hidden" name="action" value="write"/>
                 <p class="well">
-                  <label>Root rootdirectory</label><input type="text" name="rootdirectory" id="rootdirectory" onchange="document.location.href = '/?rootdirectory='+this.value;" value="%rootdirectory%"/><br>
-                  <label>Target directory</label>
+                  <label>In rootdirectory</label><input type="text" name="rootdirectory" id="rootdirectory" onchange="document.location.href = '/?rootdirectory='+this.value;" value="%rootdirectory%"/><br>
+                  <label>Pick directory</label>
                     <select id="directory" name="directory">
                       %directory%
                     </select>
                   <br>
-                  <label>Max files</label><input type="number" name="nfiles" value="%nfiles%"/><br>
+                  <label>Max shots/samples</label><input type="number" name="nfiles" value="%nfiles%"/><br>
                   <label>Start file</label><input type="number" name="nstartfile" value="%nstartfile%"/><br>
                   <label>Max duration per file</label><input type="number" name="sampleframes" value="%sampleframes%"/> &nbsp; Sampleframes<br>
-                  <label>Trim (startpos length)</label><input type="text" name="sampletrim" value="%sampletrim%"/> <br>
+                  <label>Trim shot (startpos length)</label><input type="text" name="sampletrim" value="%sampletrim%" id="sampletrim"/> <br>
                   <label>Pitch up x times </label><input type="number" name="pitchup" value="%pitchup%" step="any"/> <br>
-                  <label>Normalize</label><input type="checkbox" %normalize%"/> <br>
-                  <label>Mono</label><input type="checkbox" %mono%"/> <br>
+                  <label>Normalize shots</label><input type="checkbox" name="normalize" %normalize%/> <br>
+                  <label>Mono</label><input type="checkbox" name="mono" %mono%/> <br>
+                  <label>Detect hits and slice them</label><input type="checkbox" name="slice" %slice%/> <br>
                   <label>SOX extra</label><input type="text" name="soxextra" value="%soxextra%"/><br>
                   <label>Recurse into dirs</label><input type="checkbox" %recursive%/> <br>
 <!--outputfile--> <label>Output file</label><input type="text" name="outfile" value="%outfile%"/>
                 </p>
-<!--writefile--><input type="submit" class="download-links" value="Write file"/>
+<!--writefile--><input type="submit" class="download-links" value="Generate"/>
 <!--playfile-->  <a class="download-links" href="#" onclick="new Image().src = '/?action=play&outfile=%outfile%&directory='+document.getElementById('directory').value+'&nfiles=%nfiles%&nstartfile=%nstartfile%'; return false;">Play multishot</a>
 <!--playfile-->  <a class="download-links" href="file://%outfile%">Download</a><br><br>
               </form><br>
        </div>
         <div class="unit one-of-four">
               <p class="well"><b>Sampler tip #1:</b> Set 'max files'-value to the range of your 'start-sample-offset'-knob on your sampler, it will allow you to easily switch samples.<br><br><b>Sampler tip #2:</b> Pitching up audio is a trick to save samplespace on hardware samplers (just turn down the pitch on the sampler during playback). Please note that this
- introduces a (sometimes desirable) bitcrush sound on material with high frequencies.<br><br><b>Sampler tip #3:</b>If your samplestart-knobrange varies from 0..127, set 'Max files' to 32 files for a directory of similar-length one-bar beatloops, to eventually have 4 bar-slices of each sample on your sampler (128/4).
+ introduces a (sometimes desirable) bitcrush sound on material with high frequencies.<br><br><b>Sampler tip #3:</b>If your samplestart-knobrange varies from 0..127, set 'Max files' to 32 files for a directory of similar-length one-bar beatloops, to eventually have 4 bar-slices of each sample on your sampler (128/4).<br><br><b>Sampler tip #4:</b> this application can automatically slice (Drum)hits when found in loops. All these slices end up in /tmp/.slices. Generate some multishots, then browse this directory, remove unwanted slices, and process this folder. Voila you have a multishot with mixed slices. 
               </p>
         </div>
 <!--output-->
