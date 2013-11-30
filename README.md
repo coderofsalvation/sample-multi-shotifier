@@ -5,7 +5,7 @@ hack which expands your traditional hardware/software samplers using many-sample
 
 ### Introduction ###
 
-Breath new life into your hardware/software samplers by using multishots + start-sample-offset-parameter. Combine all samples to one wavefile, and expand your 1-sample-per-midichannel device into a xxx-sample-per-midichannel device. For example, on the electribe ESX one can have 127 samples on one drumtrack using this utility.
+Breath new life into your hardware/software samplers by using multishots + start-sample-offset-parameter. Combine all samples to one wavefile, and expand your 1-sample-per-midichannel device into a xxx-sample-per-midichannel device. For example, on the electribe ESX one can have 128 samples on one drumtrack using this utility.
 (Only requirement is having SOX utilities installed)
 
 <img src="http://www.zimagez.com/full/21f7122ee557a157329a618ec91320d4faab8d24e80693de6924c0fb25bf0a9d2353c0c2c4e1fd0bd5f293e42232e60aba168cc19324ea02.php"/>
@@ -17,7 +17,7 @@ With this tool you can just 'bake' a subset of your sample collection/directorie
 
 ### How it works ###
 
-This is a *directorybased* sample-utility which can glue samplefiles together into one samplefile. This file can be used in old/new hardware/software samplers. This only works well if your sampler supports setting the samplestart-offset-parameter on-the-fly. For example, the startposition-knob on your sampler goes from 0..127. In theory this means you can navigate thru 127 samples if you generate a sample which contains 127 samples (with the same length..hence the trim-feature). Hope this makes sense, if not, check out this sexy ascii art:
+This is a *directorybased* sample-utility which can glue samplefiles together into one samplefile. This file can be used in old/new hardware/software samplers. This only works well if your sampler supports setting the samplestart-offset-parameter on-the-fly. For example, the startposition-knob on your sampler goes from 0..127. In theory this means you can navigate thru 128 samples if you generate a sample which contains 128 samples (with the same length..hence the trim-feature). Hope this makes sense, if not, check out this sexy ascii art:
 
     Normally you would load one sample into one sample slot:
 
@@ -32,7 +32,7 @@ This is a *directorybased* sample-utility which can glue samplefiles together in
 
     0      1      2      3      4                      127
     +---------------------------------------------------+
-    |yeah! |ooh!  |funky!|hello!|    .. (and so on)     |
+    |yeah! |ooh!  |funky!|hello!|    .. (and so on)     | = 128 samples :)
     +---------------------------------------------------+
            ^     ^-- bit of silence, takes up a bit of samplememory 
            |
