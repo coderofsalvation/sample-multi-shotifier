@@ -1,7 +1,12 @@
 sample-multi-shotifier
 ======================
 
-hack which expands your traditional hardware/software samplers using many-samples-in-one-sample (poor man's soundfont)
+Create perfectly aligned multisample output.
+A Hack which expands your traditional hardware/software samplers using many-samples-in-one-sample (poor man's soundfont).
+
+<img src="https://raw.github.com/coderofsalvation/sample-multi-shotifier/master/exampleoutput.png"/>
+
+*UPDATE*: added automatic slice detection/cutting support (think drumloops e.g.)
 
 ### Introduction ###
 
