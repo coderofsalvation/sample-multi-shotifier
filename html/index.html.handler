@@ -16,9 +16,9 @@ initArg "$args" "sampleframes"  999999
 initArg "$args" "sampletrim"    "00:00.00 =00:00.20"
 initArg "$args" "normalize"     "checked='checked'"
 initArg "$args" "recursive"     "checked='checked'"
-initArg "$args" "mono"          "checked='checked'"
+initArg "$args" "mono"          "" # checked='checked'"
 initArg "$args" "slice"         " "
-initArg "$args" "soxextra"      "sox %s %s contrast 75"
+initArg "$args" "soxextra"      "sox %s %s trim -2500s" #sox %s %s contrast 75"
 
 maxtrim="00:00.00 =00:10.00"
 
@@ -64,6 +64,7 @@ collect(){
     fi
     if (( $files >= $nfiles )); then break; fi 
   done
+  echo "collected $files items (wanted=$files)"
 }
 
 padsample(){

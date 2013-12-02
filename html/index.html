@@ -66,6 +66,10 @@
                   <label>Mono</label><input type="checkbox" name="mono" %mono%/> <br>
                   <label>Detect hits and slice them</label><input type="checkbox" name="slice" %slice%/> <br>
                   <label>SOX extra</label><input type="text" name="soxextra" value="%soxextra%"/><br>
+                  <table>
+                    <tr><td>for boost:</td><td> sox %s %s contrast 75</small></td></tr>
+                    <tr><td>for electribe ESX-correction</td><td>sox %s %s contrast trim -2500s</td></tr>
+                  </table>
                   <label>Recurse into dirs</label><input type="checkbox" %recursive%/> <br>
 <!--outputfile--> <label>Output file</label><input type="text" name="outfile" value="%outfile%"/>
                 </p>
