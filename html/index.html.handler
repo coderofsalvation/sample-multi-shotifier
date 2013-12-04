@@ -1,28 +1,10 @@
 #!/bin/bash
-source "html/functions.bash"
-page="$(cat - )"; method="$1"; url="$2"; args="$3"; logfile="$4.log"
+APPNAME="Sample MultiShotifier"
 TMPFILE="/tmp/.sample-multi-shotifier"
-#[[ ! -f $TMPFILE.rootdir ]] && echo "/tmp" > $TMPFILE.rootdir
 
-# declare variables, and initialize them with a default, or a GET webargument (if received from form)
-initArg "$args" "action"        ""
-initArg "$args" "rootdirectory" "$([[ -f $TMPFILE.rootdir ]] && cat $TMPFILE.rootdir || echo '/tmp')"
-initArg "$args" "directory"     ""
-initArg "$args" "outfile"       "/tmp/multishot.wav"
-initArg "$args" "nfiles"        16
-initArg "$args" "nstartfile"    0
-initArg "$args" "pitchup"       "1.0"
-initArg "$args" "sampleframes"  999999
-initArg "$args" "sampletrim"    "00:00.00 =00:00.20"
-initArg "$args" "normalize"     "checked='checked'"
-initArg "$args" "recursive"     "checked='checked'"
-initArg "$args" "mono"          "" # checked='checked'"
-initArg "$args" "slice"         " "
-initArg "$args" "soxextra"      "sox %s %s trim -2500s" #sox %s %s contrast 75"
+# utility functions
 
-maxtrim="00:00.00 =00:10.00"
-
-# other functions
+tocheckbox(){ echo "$1" | sed "s/on/checked='checked'/g"; }
 
 getdirs(){
   cache="$( [[ -f $TMPFILE.rootdir ]] && cat $TMPFILE.rootdir )"
@@ -36,124 +18,48 @@ getdirs(){
   done | tee $TMPFILE.diroptions
 }
 
-collect(){
-  files=0; dir="$1"; nfiles="$2"; nstartfile="$3"; normalize="$4"; maxlength="$5"; trim="$6"; recursive="$7"; 
-  [[ "$8" == " " ]] && doslice=0 || doslice=1
-  [[ ! -d /tmp/.collect ]] && mkdir /tmp/.collect || rm /tmp/.collect/*
-  [[ ! -d /tmp/.slices ]] && mkdir /tmp/.slices || rm /tmp/.slices/*
-  rm /tmp/.collect/*
-  [[ ${#normalize} != 0 ]] && normalize="--norm"
-  echo "./collect $dir $nfiles $nstartfile $normalize $maxlength $trim $recursive"
-  echo "$dir" | grep "\*\." &>/dev/null && dir="$(dirname "$dir")";
-  cd "$dir"; echo "cd'ing to $(pwd)"; offset=0
-  [[ ${#recursive} != 0 ]] && listcmd="find -L . -name '*wav' -not -path '*/\.*'" || listcmd="ls *.wav"
-  eval "$listcmd" | tail -n+$nstartfile | while read wavfile; do
-    wavfile="$(echo "$wavfile" | sed 's/\.\///g')"
-    echo "checking $wavfile ($samples samples < $maxlength, files/nfiles: $files/$nfiles)"
-    samples="$(soxi "$wavfile" | grep Duration | cut -d' ' -f11 )"
-    if [[ ${#samples} > 0 ]] && 
-       (( "$samples" < "$maxlength" )) && (( $files < $nfiles )); then
-      echo "processing ($files) $wavfile"; name="$(basename "$wavfile" | sed 's/WAV/wav/g')"
-      # if slices is enabled, disable the trim (and set to maxtrim to prevent long waiting times)
-      (( $doslice == 1 )) && pretrim=$maxtrim || pretrim=$trim
-      sox "$wavfile" $normalize -c 2 -e signed -b 16 -r 44100 "/tmp/.collect/$name.trimmed.wav" trim ${pretrim}
-      if (( $doslice == 1 )); then 
-        slice "/tmp/.collect/$name.trimmed.wav" /tmp/.slices "$trim"
-        files=$(ls -1 /tmp/.slices | wc -l )
-      else ((files=files+1)); fi
-    fi
-    if (( $files >= $nfiles )); then break; fi 
-  done
-  echo "collected $files items (wanted=$files)"
-}
+# initialize variables in case GET webargument didnt do this already 
+[[ ! -n $action         ]] && action=""
+[[ ! -n $rootdirectory  ]] && rootdirectory="$([[ -f $TMPFILE.rootdir ]] && cat $TMPFILE.rootdir || echo '/tmp')"
+[[ ! -n $directory      ]] && directory=""
+[[ ! -n $outfile        ]] && outfile="/tmp/multishot.wav"
+[[ ! -n $nfiles         ]] && nfiles=16
+[[ ! -n $nstartfile     ]] && nstartfile=0
+[[ ! -n $pitchup        ]] && pitchup="1.0"
+[[ ! -n $sampleframes   ]] && sampleframes=999999
+[[ ! -n $sampletrim     ]] && sampletrim="00:00.00 =00:00.20"
+[[ ! $action == "write" ]] && [[ ! -n $normalize     ]] && normalize="checked='checked'"   || normalize="$(tocheckbox "$normalize")"
+[[ ! $action == "write" ]] && [[ ! -n $recursive     ]] && recursive="checked='checked'"   || recursive="$(tocheckbox "$recursive")"
+[[ ! $action == "write" ]] && [[ ! -n $mono          ]] && mono="checked='checked'"        || mono="$(tocheckbox "$mono")"
+[[ ! $action == "write" ]] && [[ ! -n $esxoptimize   ]] && esxoptimize="checked='checked'" || esxoptimize="$(tocheckbox "$esxoptimize")"
+[[ ! $action == "write" ]] && [[ ! -n $slice         ]] && slice="checked='checked'"       || slice="$(tocheckbox "$slice")"
+[[ ! -n $soxextra      ]]  && soxextra="sox %s %s norm" #trim -2500s" #sox %s %s contrast 75"
+# sanity checks
+output="$( {
+  which sox  &>/dev/null && echo "[OK] sox is installed" || echo "[ERROR] sox is not installed, please install"
+  which vamp-simple-host &>/dev/null && echo "[OK] vamp is installed" || echo "[ERROR] vamp is not installed, slice will not work, please install vamp"
+  [[ -f "/usr/lib/ladspa/ladspa-rubberband.so" ]] && echo "[OK] rubberizer ladspa installed" || echo "[ERROR] please install steve harris plugins / rubberband"
+  echo ""
+} )"
 
-padsample(){
-  inputfile="$1"; trim="$2"; normalize="$3"
-  [[ ${#normalize} != 0 ]] && normalize="--norm"
-  silencefile="/tmp/.collect/multishotsilence.$(echo "$trim" | sed 's/ /-/g').wav"
-  [[ ! -f "$silencefile" ]] && sox -n -e signed -b 16 -r 44100 -c 2 "$silencefile" trim ${trim} # create silence file to enable exact padding
-  sox -m "$silencefile" "$inputfile" "$inputfile.padded.wav" $normalize # pad wav
-  echo "padding sample $inputfile to $trim"
-}
+# include the bash lib
+source html/multishotifier.bash
 
-bundle(){
-  indir="$1"; outfile="$2"; mono="$3"; pitchup="$4"; soxextra="${5}"; trim="$6"; normalize="$7"
-  [[ ${#mono} != 0 ]] && mono="-c 1"
-  cd "$indir"
-  rm *.padded.wav &>/dev/null
-  ls *.wav | while read file; do padsample "$file" "$trim" "$normalize"; done
-  if ls *.padded.wav &>/dev/null; then 
-    sox *.padded.wav $mono $outfile speed "$pitchup" 
-    extra="$( printf "$soxextra" "$outfile" "$outfile.wav")"; echo "$extra";
-    ${extra}; mv "$outfile.wav" "$outfile"
-    echo "written $outfile ($(stat -c%s "$outfile") bytes)"
-  else echo "no wavfiles found to glue to output file"; fi
-  rm *.padded.wav
-}
+# lets handle it!
+selecteddir="$directory"
+directory="$(getdirs "$rootdirectory" "$selecteddir")" # generate selectbox options
+echo "$rootdirectory" > $TMPFILE.rootdir                   # cache rootdir for convenience
 
-slice(){
-  input="$1"; outdir="$2"; trim="$3"
-  which bc &>/dev/null || { echo "please install 'bc' from your package manager"; exit 1; }
-  which vamp-simple-host &>/dev/null || { echo "please install 'vamp-examples' from your package manager"; exit 1; }
-  hits="$(vamp-simple-host vamp-example-plugins:percussiononsets "$input" 2>/dev/null | grep -E " [0-9].*" | sed 's/ //g;s/://g')";
-  declare -a hitArray; last=""; i=0
-  IFS='
-  ' # set field seperator to newlines
-  for hit in $hits; do hitArray[$i]=$hit; ((i++)); done
-  for((i=0;i<${#hitArray[@]}-1;i++)); do
-    hit=${hitArray[$i]}
-    hitnext=${hitArray[$i+1]}
-    length="$( echo "($hitnext-$hit)" | bc )"; [[ ${length:0:1} == "." ]] && length="0$length"
-    # shift sample into the past a bit to avoid clicksounds on bassdrums (prevent too extreme cut)
-    (( $i > 0 )) && hit="$(echo "$hit" | bc )";[[ ${hit:0:1} == "." ]] && hit="0$hit"
-    outfile="$outdir/$(basename "$input.slice-$i.wav" )"
-    echo "writing $outfile slice #$i"
-    sox "$input" "$outfile" trim $hit $length trim ${trim} # fade t 0 $length 0.02
-  done
-}
-
-# lets handle!
-selecteddir="${args["directory"]}"
-args["directory"]="$(getdirs "${args["rootdirectory"]}" "$selecteddir")" # generate selectbox options
-echo "${args["rootdirectory"]}" > $TMPFILE.rootdir                   # cache rootdir for convenience
-
-case "${args["action"]}" in
-
-
-  play)
-                echo "playing "${args["outfile"]}""
-                which aplay && (aplay "${args["outfile"]}" &>/dev/null &) || echo "aplay is not installed..cannot play"
-                echo "$page" 
+case $action in 
+  
+  play)         echo "playing $outfile"
+                which play && (play "$outfile" &) || echo "sox is not installed..cannot play"
                 ;;
 
-  write)        
-                echo "$selecteddir" > $TMPFILE.selecteddir
-                output="$(collect "$selecteddir" \
-                                 "${args["nfiles"]}" \
-                                 "${args["nstartfile"]}" \
-                                 "${args["normalize"]}" \
-                                 "${args["sampleframes"]}" \
-                                 "${args["sampletrim"]}" \
-                                 "${args["recursive"]}" \
-                                 "${args["slice"]}" \
-                                 2>&1 | tee -a "$logfile" 2>&1 )"
-                if [[ ! ${args["slice"]} == " " ]]; then 
-                  indir="/tmp/.slices"
-                else
-                  indir="/tmp/.collect"
-                fi 
-                output="$output $(bundle "$indir" \
-                                         "${args["outfile"]}"  \
-                                         "${args["mono"]}" \
-                                         "${args["pitchup"]}" \
-                                         "${args["soxextra"]}" \
-                                         "${args["sampletrim"]}"  \
-                                         "${args["normalize"]}" 2>&1 )"  
-
-                echo "$page" | replace '<!--output-->' "<div class='unit span-grid console'><pre>$output</pre></div>"
+  write)        _writemultishot
+                output="$output $(cat $TMPFILE.multishotlog)"
                 ;;
 
-  *)            echo "$page" | grep -v playfile
-                ;;
-
-esac | templatify | sed 's/ on\/>/checked="checked"\/>/g' # quickndirty checkbox fix *UGLY*
+  *)      # nothing to do default  
+          ;;
+esac

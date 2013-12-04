@@ -1,90 +1,47 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="">
-    <meta name="author" content="">
-
-    <title>Multishotifier</title>
-
-    <link href="css/toast.css" rel="stylesheet">
-    <style type="text/css"> 
-      html { padding:1.0em; font: 100%/1.5 Helvetica Neue,Helvetica,Arial,sans-serif;
-        background: #f5f6f6; /* Old browsers */
-        background: -moz-linear-gradient(top, #f5f6f6 0%, #dbdce2 21%, #b8bac6 49%, #dddfe3 80%, #f5f6f6 100%); /* FF3.6+ */
-        background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#f5f6f6), color-stop(21%,#dbdce2), color-stop(49%,#b8bac6), color-stop(80%,#dddfe3), color-stop(100%,#f5f6f6)); /* Chrome,Safari4+ */
-        background: -webkit-linear-gradient(top, #f5f6f6 0%,#dbdce2 21%,#b8bac6 49%,#dddfe3 80%,#f5f6f6 100%); /* Chrome10+,Safari5.1+ */
-        background: -o-linear-gradient(top, #f5f6f6 0%,#dbdce2 21%,#b8bac6 49%,#dddfe3 80%,#f5f6f6 100%); /* Opera 11.10+ */
-        background: -ms-linear-gradient(top, #f5f6f6 0%,#dbdce2 21%,#b8bac6 49%,#dddfe3 80%,#f5f6f6 100%); /* IE10+ */
-        background: linear-gradient(to bottom, #f5f6f6 0%,#dbdce2 21%,#b8bac6 49%,#dddfe3 80%,#f5f6f6 100%); /* W3C */
-        filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f5f6f6', endColorstr='#f5f6f6',GradientType=0 ); /* IE6-9 */
-      }
-      h1 a{ color:#555; width:50%; float:left}
-      small { float:right}
-      input,button,select { font-size: 16px; }
-      label { width:38%; display:block; float:left }
-      input,select { width:50%; margin-bottom: 0.8em; }
-      input[type=number] { width:80px; }  
-      input[type=checkbox] { width:20px }  
-      div.console { border: 1px solid #888; overflow:scroll; margin-bottom:15px }
-      div.console pre {
-        font-size: 11px;
-        color: #CCC;
-      }
-      input[type=submit], button { padding:1.0em }
-      div.console pre, div.console{ background-color:#555; }
-    </style>
-  </head>
-
-  <body>
-
+$(cat html/header.html 2>&1 | fetch )
+  <body onload="initToolTips();">
     <div class="grid">
-        <div class="unit span-grid">
-          <h1>
-            <a href="/">Multishotifier</a>
-          </h1>
-          <small><a href="https://github.com/coderofsalvation/sample-multi-shotifier" target="_blank">https://github.com/coderofsalvation/sample-multi-shotifier</a></small>
-          <br><br>
-        </div>
-        <div class="unit one-of-two">
-              <form method="GET" action="/" id="form">
-                <input type="hidden" name="action" value="write"/>
-                <p class="well">
-                  <label>In rootdirectory</label><input type="text" name="rootdirectory" id="rootdirectory" onchange="document.location.href = '/?rootdirectory='+this.value;" value="%rootdirectory%"/><br>
-                  <label>Pick directory</label>
-                    <select id="directory" name="directory">
-                      %directory%
-                    </select>
-                  <br>
-                  <label>Max shots/samples</label><input type="number" name="nfiles" value="%nfiles%"/><br>
-                  <label>Start file</label><input type="number" name="nstartfile" value="%nstartfile%"/><br>
-                  <label>Max duration per file</label><input type="number" name="sampleframes" value="%sampleframes%"/> &nbsp; Sampleframes<br>
-                  <label>Trim shot (startpos length)</label><input type="text" name="sampletrim" value="%sampletrim%" id="sampletrim"/> <br>
-                  <label>Pitch up x times </label><input type="number" name="pitchup" value="%pitchup%" step="any"/> <br>
-                  <label>Normalize shots</label><input type="checkbox" name="normalize" %normalize%/> <br>
-                  <label>Mono</label><input type="checkbox" name="mono" %mono%/> <br>
-                  <label>Detect hits and slice them</label><input type="checkbox" name="slice" %slice%/> <br>
-                  <label>SOX extra</label><input type="text" name="soxextra" value="%soxextra%"/><br>
-                  <table>
-                    <tr><td>for boost:</td><td> sox %s %s contrast 75</small></td></tr>
-                    <tr><td>for electribe ESX-correction</td><td>sox %s %s contrast trim -2500s</td></tr>
-                  </table>
-                  <label>Recurse into dirs</label><input type="checkbox" %recursive%/> <br>
-<!--outputfile--> <label>Output file</label><input type="text" name="outfile" value="%outfile%"/>
-                </p>
-<!--writefile--><input type="submit" class="download-links" value="Generate"/>
-<!--playfile-->  <a class="download-links" href="#" onclick="new Image().src = '/?action=play&outfile=%outfile%&directory='+document.getElementById('directory').value+'&nfiles=%nfiles%&nstartfile=%nstartfile%'; return false;">Play multishot</a>
-<!--playfile-->  <a class="download-links" href="file://%outfile%">Download</a><br><br>
-              </form><br>
-       </div>
-        <div class="unit one-of-four">
-              <p class="well"><b>Sampler tip #1:</b> Set 'max files'-value to the range of your 'start-sample-offset'-knob on your sampler, it will allow you to easily switch samples.<br><br><b>Sampler tip #2:</b> Pitching up audio is a trick to save samplespace on hardware samplers (just turn down the pitch on the sampler during playback). Please note that this
- introduces a (sometimes desirable) bitcrush sound on material with high frequencies.<br><br><b>Sampler tip #3:</b>If your samplestart-knobrange varies from 0..127, set 'Max files' to 32 files for a directory of similar-length one-bar beatloops, to eventually have 4 bar-slices of each sample on your sampler (128/4).<br><br><b>Sampler tip #4:</b> this application can automatically slice (Drum)hits when found in loops. All these slices end up in /tmp/.slices. Generate some multishots, then browse this directory, remove unwanted slices, and process this folder. Voila you have a multishot with mixed slices. 
-              </p>
-        </div>
-<!--output-->
+      <div class="unit span-grid">
+        <h1>
+          <a href="/">Multishotifier</a>
+        </h1>
+        <small><a href="https://github.com/coderofsalvation/sample-multi-shotifier" target="_blank">https://github.com/coderofsalvation/sample-multi-shotifier</a></small>
+        <br><br>
+      </div>
+
+      <form method="GET" action="/" id="form">
+      <input type="hidden" name="action" value="write"/>
+      <div class="unit one-of-two">
+            <p class="well">
+              <label><a class="round-2 icontooltip" title="set your rootdirectory here" href="#">?</a>In rootdirectory</label><input type="text" name="rootdirectory" id="rootdirectory" onchange="document.location.href = '/?rootdirectory='+this.value;" value="$rootdirectory"/><br>
+              <label><a class="round-2 icontooltip" title="process from the rootdir or choose a subfolder" href="#">?</a>Pick directory</label>
+                <select id="directory" name="directory">
+                  $directory
+                </select>
+              <br>
+              <label><a class="round-2 icontooltip" href="#" title="how much samples should be combined into one .wav file? For Electribe ESX this should be 128. HINT: Set max files-value to the range of your start-sample-offset-knob on your sampler, it will allow you to easily switch samples. HINT: If your samplestart-knobrange varies from 0..127, set Max files to 32 files for a directory of similar-length one-bar beatloops, to eventually have 4 bar-slices of each sample on your sampler (128/4)">?</a>Max shots/samples</label><input type="number" name="nfiles" value="$nfiles"/><br>
+              <label><a class="round-2 icontooltip" href="#" title="start processing after the nth .wav-file found in the folders">?</a>Start file</label><input type="number" name="nstartfile" value="$nstartfile"/><br>
+              <label><a class="round-2 icontooltip" href="#" title="optionally you can exclude big .wav files from being processed">?</a>Max duration per file</label><input type="number" name="sampleframes" value="$sampleframes"/> &nbsp; Sampleframes<br>
+              <label><a class="round-2 icontooltip" href="#" title="optionally you can here define the startposition + length for every processed sample">?</a>Trim shot (startpos length)</label><input type="text" name="sampletrim" value="$sampletrim" id="sampletrim"/> <br>
+              <label><a class="round-2 icontooltip" href="#" title="Pitching up audio is a trick to save samplespace on hardware samplers (just turn down the pitch on the sampler during playback). Please note that this introduces a (sometimes desirable) bitcrush sound on material with high frequencies.">?</a>Pitch up x times </label><input type="number" name="pitchup" value="$pitchup" step="any"/> <br>
+            </p>
+            <input type="submit" class="download-links" value="Generate"/>
+            <a class="download-links" href="#" onclick="new Image().src = '/?action=play&outfile=$outfile&directory='+document.getElementById('directory').value+'&nfiles=$nfiles&nstartfile=$nstartfile'; return false;">Play multishot</a>
+            <a class="download-links" href="file://$outfile">Download</a><br><br>
+      </div>
+      <div class="unit one-of-two">
+            <p class="well">
+              <label><a class="round-2 icontooltip" href="#" title="do an auto-gain on every sample so every sample sounds equally loud">?</a>Normalize shots</label><input type="checkbox" name="normalize" $normalize/> <br>
+              <label><a class="round-2 icontooltip" href="#" title="Some samplers are mono-only, but this option can also save memory">?</a>Mono</label><input type="checkbox" name="mono" $mono/> <br>
+              <label><a class="round-2 icontooltip" href="#" title="This is handy for drumloops. Instead of substracting only one fragment (trim shot), it will also dissassemble the drumsounds inside a loop and include them as seperate samples.">?</a>Detect hits and slice them</label><input type="checkbox" name="slice" $slice/> <br>
+              <label><a class="round-2 icontooltip" href="#" title="The electribe ESX usually adds 1250 samples in front of every sample. Turn this feature on if you want to have 128 samples tightly snapped to the 128 steps of your startposition knob.">?</a>Electribe ESX optimize</label><input type="checkbox" name="esxoptimize" $esxoptimize/> <br>
+              <label><a class="round-2 icontooltip" href="#" title="Here you can add additional sox/ladspa effects. Examples: sox %s %s contrast 80, sox %s % ladspa /usr/lib/ladspa/someplugin.so">?</a>SOX extra</label><input type="text" name="soxextra" value="$soxextra"/><br>
+              <label><a class="round-2 icontooltip" href="#" title="Turn this on if you want to process nested directories as well">?</a>Recurse into dirs</label><input name="recursive" type="checkbox" $recursive/> <br>
+              <label><a class="round-2 icontooltip" href="#" title="This is where all samples eventually end up">?</a>Output file</label><input type="text" name="outfile" value="$outfile"/>
+            </p>
+      </div>
+      </form>
+      <div class='unit span-grid console'><pre>$output</pre></div>
     </div>
-  
   </body>
-</html>
+$(cat html/footer.html 2>&1 | fetch )

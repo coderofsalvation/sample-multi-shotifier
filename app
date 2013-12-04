@@ -1,62 +1,136 @@
 #!/bin/bash
-TMPFILE="/tmp/.bashweb.$(whoami)"
+#
+# deadsimple bash webserver + html (bash) templates
+#
+# Usage: ./app
+#
+# Copyright 2013 Coder of Salvation. All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or without modification, are
+# permitted provided that the following conditions are met:
+# 
+#    1. Redistributions of source code must retain the above copyright notice, this list of
+#       conditions and the following disclaimer.
+# 
+#    2. Redistributions in binary form must reproduce the above copyright notice, this list
+#       of conditions and the following disclaimer in the documentation and/or other materials
+#       provided with the distribution.
+# 
+# THIS SOFTWARE IS PROVIDED BY Coder of Salvation AS IS'' AND ANY EXPRESS OR IMPLIED
+# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+# FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL Coder of Salvation OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# 
+# The views and conclusions contained in the software and documentation are those of the
+# authors and should not be interpreted as representing official policies, either expressed
+# or implied, of Coder of Salvation.
+ 
+
+TMPFILE="/tmp/.bashwapp.$(whoami)"
 PORT=8000
 pid=$$
+CLIENT=$TMPFILE.fifo 
+MYPATH="$(dirname "$(readlink -f "$0")" )"
 
 start(){
-   [[ -n "$1" ]] && PORT="$1"; TMPFILE="$TMPFILE.$PORT"; [[ ! -p $TMPFILE ]] && mkfifo "$TMPFILE"
-   which xdg-open &>/dev/null && xdg-open "http://localhost:$PORT" || echo "[x] surf to http://localhost:$PORT"
-   while [[ -p "$TMPFILE" ]]; do
-     [[ -f "$TMPFILE.log" ]] && tail -n5 $TMPFILE.log
-     { (read line<$TMPFILE;
-       logmsg(){ cat - | while read l; do echo "[$(date)] $1> $l" >> $TMPFILE.log; [[ ! "$1" == "in" ]] && echo "$l"; done; }
-       message="$( echo "$line" | sed 's/[\n\r]//g')"
-       method="$(echo "$message" | sed 's/ \/.*//g' )"
-       url="$(echo "$message" | sed 's/GET //g;s/POST //g;s/DELETE //g;s/PUT //g;s/ HTTP.*//g')"
-       echo "$method $url" | logmsg in
-       echo -e "HTTP/1.1 200 OK\r\n"  | logmsg out
-       reply="$( $0 onUrl "$method" "$url" "$TMPFILE" )"; [[ "$reply" == "quit" ]] && kill -9 $pid || echo "$reply")
-     } | nc -v -l $PORT > $TMPFILE | tee -a $TMPFILE.log
-   done
+  [[ -n "$1" ]] && PORT="$1"; TMPFILE="$TMPFILE.$PORT"; 
+  which xdg-open &>/dev/null && xdg-open "http://localhost:$PORT" || echo "[x] surf to http://localhost:$PORT"
+  console "" "server started @ localhost:$PORT"
+  [[ ! -p $CLIENT ]] && mkfifo $CLIENT 
+  while [[ -p $CLIENT ]]; do cat $CLIENT | nc -v -l $PORT 2>&1 | onRequest; done
+  rm $TMPFILE.*
+}
+
+console(){
+  echo "[$(date)] bashwapp $1 $2" | tee -a $TMPFILE.log; return 0
+}
+
+onRequest(){
+  cat - | while read line; do 
+    [[ -n $DEBUG ]] && console "<=" "$line" || console "<=" "$line" &>/dev/null
+    [[ "$line" =~ "Connection from " ]] && CLIENT_IP="$(echo "$line" | sed s'/Connection from \[//g;s/\].*//g' )"
+    [[ "$line" =~ "GET "             ]] || [[ "$line" =~ "GET"  ]] && parseUrl "$line" "GET"
+    [[ "$line" =~ "POST "            ]] || [[ "$line" =~ "POST" ]] && parseUrl "$line" "POST"
+    [[ "$line" =~ "Host: "           ]] && CLIENT_HOST="$(echo "$line" | sed 's/Host: //g')"
+    [[ "$line" =~ "User-Agent: "     ]] && CLIENT_USERAGENT="$(echo "$line" | sed 's/User-Agent: //g')"
+    [[ "$line" =~ "Accept: "         ]] && CLIENT_ACCEPT="$(echo "$line" | sed 's/Accept: //g')"
+    if (( ${#line} == 1 )); then (onUrl "$CLIENT" "$CLIENT_URL" &); fi
+  done
+}
+
+parseUrl(){
+  line="$1"; method="$2"
+  CLIENT_URL="$(echo "$line" | sed "s/$method //g;s/ .*//g;s/?.*//g")"
+  CLIENT_ARGS="$(echo "$line" | sed "s/.*?//g;s/ .*//g")"
+  # turn getvars into variables
+  IFS='&'; for arg in $CLIENT_ARGS; do key="$(echo "${arg/=*/}" | urldecode )"; value="$(echo "${arg/*=/}" | urldecode)"; eval "$key=\"$value\""; done 
 }
 
 onUrl(){
-  method="$1";  url="$(echo "$2" | sed 's/?.*//g')"; args="$(echo "$2" | sed 's/.*?//g;s/&/\n/g')"
-  tmpfile="$3"; file="html$url"
-  
-  case $url in
+  console "<=" "$CLIENT_METHOD $CLIENT_URL $CLIENT_ARGS"
+  case "$CLIENT_URL" in 
 
-    /)        serveFile "html/index.html" "$method" "$url" "$args" "$tmpfile"
+    /)        serveFile "html/index.html" $CLIENT
               ;;
 
-    /rest)    echo '{"code":0, "message": "'$(date)'" }'
+    /rest)    echo '{"code":0, "message": "'$(date)'" }' > $CLIENT
               ;;
 
-    /log)     echo "<html><body><pre>$(tail -n15 "$3.log")</pre></body></html>"
+    /log)     echo "<html><body><pre>$(tail -n45 "$TMPFILE.log")</pre></body></html>" > $CLIENT
               ;;
 
-    /quit)    echo "quit";
+    /quit)    echo "Application terminated" > $CLIENT; rm $CLIENT;
               ;;
 
-    *)        [[ -f "$file" ]] && serveFile "$file" "$method" "$url" "$args" "$tmpfile" || 
-                echo "bashwapp> $file not found"
+    *)        [[ -f "html$CLIENT_URL" ]] && serveFile "html$CLIENT_URL" $CLIENT || { httpheader 404 > $CLIENT; console "!>" "html$CLIENT_URL not found"; }
               ;;
   esac
 }
 
-serveFile(){
-  file="$1"; [[ ! -f "$file" ]] && echo "file $file not found" && return 1
-  if [[ -f "$file.handler" ]]; then                      # and if a file(.handler) file is found
-    echo "cat $file | $file.handler $2 $3 $4 $5" >> "$5.log"
-    cat "$file" | $file.handler "$2" "$3" "$4" "$5" 2>&1      # output the file and filter using handler
-  else cat "$file"; fi # or just output the file (images/css/eg)
+httpheader(){
+  code=$1; file="$2"
+  case $code in 
+    200) echo "HTTP/1.0 200 OK" 
+         echo -e "Content-Length: $(stat -c%s "$file")\r\n"
+         ;;
+    404) echo "HTTP/1.0 404 Not Found\r\n"
+         ;;
+  esac
 }
 
+serveFile(){
+  file="$1"; CLIENT="$2"
+  [[ ! -f "$file" ]] && console "=>" "file $file not found" && httpheader 404 > $CLIENT && return 1
+  [[ -f "$file.handler" ]] && source $file.handler && console "=>" "source $file.handler" 
+  cd "$MYPATH"; # return for sure
+  console "=>" "serving $file"
+  cat "$file" | fetch > $TMPFILE.output 
+  { httpheader 200 "$TMPFILE.output"; cat "$TMPFILE.output"; } > $CLIENT 
+}
+
+urldecode(){
+  data="$(cat - | sed 's/+/ /g')"
+  printf '%b' "${data//%/\x}"
+}
 
 cleanup(){
-  [[ -f "$TMPFILE" ]] && rm "$TMPFILE"
   echo "server stopped"
-  exit
+  exit 0
+}
+
+# smarty like template engine which executes inline bash in html / replaces variables with values 
+fetch(){
+  IFS=''; cat - | while read line; do 
+    for k in "${!args[@]}"; do [[ "$k" == "0" ]] && continue;
+      value="$( echo "${args["$k"]}" | sed -e 's/[\/&]/\\&/g' | sed "s/'/\"/g" )"; eval "$k="$value";"
+    done; 
+    line="$(eval "echo \"$( echo "$line" | sed 's/"/\\"/g')\"")"; echo "$line" # process bash in snippet
+  done
 }
 
 trap cleanup SIGINT

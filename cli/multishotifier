@@ -1,0 +1,15 @@
+#!/bin/bash 
+MYPATH="$(dirname "$(readlink -f "$0")" )"
+
+_usage(){
+  echo "This is the cli version (for the macgyver people)"; echo ""
+  grep "^[^_].\+(){$" "$MYPATH/html/multishotifier.bash" | while read line; do
+    local cmd=$(echo "$line" | sed "s/(){.*//g")
+    local desc=$(grep -C0 -A0 -B2 "$cmd(){" "$MYPATH/html/multishotifier.bash" | sed "N;s/\n.*//g" | head -n1 )
+    local usage=$(grep -C0 -A0 -B1 "$cmd(){" "$MYPATH/html/multishotifier.bash" | sed "N;s/\n.*//g" )
+    printf "%s\n\n" "$desc" | sed 's/# //g'
+    printf "    $0 %-20s %-40s\n\n" "$cmd" "$usage" | sed 's/# //g'
+  done; echo "";
+}
+
+[[ ! -n "$1" ]] && _usage 

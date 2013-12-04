@@ -1,0 +1,89 @@
+#!/bin/bash 
+
+#
+# Usage: ./loopcrossfade <input.wav> <faderatio> [outputdir]
+#
+
+loopcrossfade(){
+  input="$1"; faderatio="$2"; outputdir="$3"; tmpinput="/tmp/$(basename "$input").loopcrossfade.wav"
+  [[ ! -f "$input" ]] && echo "cannot find $1" && exit 1
+  valid=$(echo "$faderatio > 1.99" | bc -l ); 
+  (( $valid == 0 )) && echo "faderatio should be 2.0 or bigger" && exit 1
+  [[ -d "$outputdir" ]] && outputfile="$outputdir/$(basename "$input")_loop.$faderatio.wav" \
+                        || outputfile="$input""_loop.$faderatio.wav"
+  # prepare input
+  format="-c 2 -e signed -b 16 -r 44100"
+  sox "$input" ${format} "$tmpinput" && 
+  samples="$(soxi "$tmpinput" | grep Duration | cut -d' ' -f11 )"
+  fadetime="$( echo "$samples/$faderatio" | bc )"
+  fadetimehalf="$( echo "$fadetime/2" | bc )"
+  middle="$( echo "$samples-$fadetime" | bc )"
+
+  # get middle part + add fadein 
+  sox "$tmpinput" ${format} "$tmpinput.lmid.wav" fade t "$fadetimehalf"s trim 0 "$middle"s
+  # get end (+fadeout)
+  sox "$tmpinput" ${format} "$tmpinput.lend.wav" trim "$middle"s "$fadetime"s
+  sox "$tmpinput.lend.wav" "$tmpinput.lendfadeout.wav" fade t 0 0 "$fadetime"s
+  # combine together
+  sox -m "$tmpinput.lendfadeout.wav" "$tmpinput.lmid.wav" "$outputfile" norm
+  echo "written $outputfile"
+  rm /tmp/*.loopcrossfade.*
+}
+
+mkdir /tmp/slices /tmp/loops /tmp/loops.keep &>/dev/null
+rm /tmp/slices/* /tmp/loops/* &>/dev/null
+
+samples=47000
+skip=0
+skipsize=1000000
+begin=0
+end=0
+#
+# find mp3's, slice them up, and loop slices
+#
+
+
+batch(){
+  [[ ! -f "$1" ]] && echo "file $1 does not exist" && exit 1
+  echo "converting $file to wav"
+  infile="/tmp/$(basename "$1").tmp.wav"
+  [[ ! -f "$infile" ]] && mpg123 -v -w "$infile" "$1"
+  [[ -n "$2" ]] && start=$2 || start=0
+  length="$(soxi "$infile" | grep Duration | cut -d' ' -f11 )"
+  for((i=0+start;end<length;i++)); do
+    ((begin=i*samples+skip))
+    ((end=$begin+$samples))
+    sox "$infile" /tmp/slices/$i.wav trim ="$begin"s ="$end"s
+    loop="$(loopcrossfade "/tmp/slices/$i.wav" 3 /tmp/loops)"
+    echo "$loop"; loopfile="$(echo "$loop" | sed 's/.* //g')"
+    play "$loopfile" repeat 2; 
+    read -p "wanna keep this loop? ([enter]=forget loop, [5]again, [2]fastforward, [1]keep loop, [+]nextfile) " key
+    [[ "$key" == "1" ]] && mv "$loopfile" /tmp/loops.keep
+    [[ "$key" == "2" ]] && ((skip+=$skipsize));
+    [[ "$key" == "+" ]] && break;
+    [[ "$key" == "5" ]] && ((i--));
+    rm "$loopfile";
+  done
+  echo "files are in /tmp/loops.keep"
+}
+
+rename(){
+  read -p "rename all files with X (or press ctrl-c to break) " name 
+  i=1;
+  cd /tmp/loops.keep; 
+  mkdir "$name"
+  ls /tmp/loops.keep | grep "\.wav" | while read file; do 
+    mv "$file" "$name/$name-$i.wav"
+    ((i++))
+  done
+  find | less
+}
+
+"$@"
+
+#rm /tmp/loops/*
+##find /mnt/kingkong/musiclib/samples/recovered/500kb -name "*\.wav" | while read file; do 
+#find /tmp -name "*\.wav" | while read file; do 
+#  loopcrossfade "$file" 8 /tmp/loops
+#  loopcrossfade "$file" 3 /tmp/loops
+#done
