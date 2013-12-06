@@ -2,7 +2,6 @@
 
 _collect(){
   files=0; dir="$1"; nfiles="$2"; nstartfile="$3"; normalize="$4"; maxlength="$5"; trim="$6"; recursive="$7"; slice="$8"
-	maxtrim="00:00.00 =00:10.00"
   [[ ! -d /tmp/.collect ]] && mkdir /tmp/.collect || rm /tmp/.collect/* &>/dev/null
   [[ ! -d /tmp/.slices  ]] && mkdir /tmp/.slices || rm /tmp/.slices/* &>/dev/null
   (( $normalize == 1 )) && normalize="--norm"
@@ -16,17 +15,17 @@ _collect(){
     echo "checking $wavfile ($samples samples < $maxlength, files/nfiles: $files/$nfiles)"
     samples="$(soxi "$wavfile" | grep Duration | cut -d' ' -f11 )"
     if [[ ${#samples} > 0 ]] && 
-       (( "$samples" < "$maxlength" )) && (( $files < $nfiles )); then
+       (( samples < maxlength )) && (( $files < $nfiles )); then
       echo "processing ($files) $wavfile"; name="$(basename "$wavfile" | sed 's/WAV/wav/g')"
       # if slices is enabled, disable the trim (and set to maxtrim to prevent long waiting times)
-      [[ ${#slice} > 0 ]] && pretrim=$maxtrim || pretrim=$trim
+      (( slice > 0 )) && pretrim="$maxtrim" || pretrim="$trim"
       sox "$wavfile" $normalize -c 2 -e signed -b 16 -r 44100 "/tmp/.collect/$name.trimmed.wav" trim ${pretrim}
-      if (( $slice == 1 )); then 
-        slice "/tmp/.collect/$name.trimmed.wav" /tmp/.slices "$trim"
+      if (( slice == 1 )); then 
+        slice "/tmp/.collect/$name.trimmed.wav" /tmp/.slices "$trim" "$nfiles"
         files=$(ls -1 /tmp/.slices | wc -l )
       else ((files=files+1)); fi
     fi
-    if (( $files >= $nfiles )); then break; fi 
+    if (( files >= nfiles )); then break; fi 
   done < $TMPFILE.filelist
   echo "collected $files items (wanted=$nfiles)"
 }
@@ -38,7 +37,7 @@ padsample(){
   [[ ${#normalize} != 0 ]] && normalize="norm"
   silencefile="/tmp/.collect/multishotsilence.$(echo "$trim" | sed 's/ /-/g').wav"
   [[ ! -f "$silencefile" ]] && sox -n -e signed -b 16 -r 44100 -c 2 "$silencefile" trim ${trim} 2>&1 # create silence file to enable exact padding
-  echo sox -m "$silencefile" "$inputfile" "$inputfile.padded.wav" $normalize # pad wav
+  sox -m "$silencefile" "$inputfile" "$inputfile.padded.wav" $normalize # pad wav
   echo "padding sample $inputfile to $trim"
 }
 
@@ -62,16 +61,15 @@ _bundle(){
 }
 
 # slices a sample into seperate samples based on transients :
-# <input.wav> <outputdir> <00:00:00.0 =00:00:00.50> 
+# <input.wav> <outputdir> <00:00:00.0 =00:00:00.50> <maxslices>
 slice(){
-  input="$1"; outdir="$2"; trim="$3"
+  input="$1"; outdir="$2"; trim="$3"; maxslices="$4"
   which bc &>/dev/null || { echo "please install 'bc' from your package manager"; exit 1; }
   which vamp-simple-host &>/dev/null || { echo "please install 'vamp-examples' from your package manager"; exit 1; }
   hits="$(vamp-simple-host vamp-example-plugins:percussiononsets "$input" 2>/dev/null | grep -E " [0-9].*" | sed 's/ //g;s/://g')";
+  echo "$hits" > $TMPFILE.hits
   declare -a hitArray; last=""; i=0
-  IFS='
-  ' # set field seperator to newlines
-  for hit in $hits; do hitArray[$i]=$hit; ((i++)); done
+  while read -r line; do echo "$line"; hitArray[$i]="$line"; ((i++)); done < $TMPFILE.hits
   for((i=0;i<${#hitArray[@]}-1;i++)); do
     hit=${hitArray[$i]}
     hitnext=${hitArray[$i+1]}
@@ -81,7 +79,9 @@ slice(){
     outfile="$outdir/$(basename "$input.slice-$i.wav" )"
     echo "writing $outfile slice #$i"
     sox "$input" "$outfile" trim $hit $length trim ${trim} # fade t 0 $length 0.02
+    (( i >= maxslices )) && return 0
   done
+  IFS=$IFSOLD # this one caused me headaches 
 }
 
 _writemultishot(){
@@ -92,25 +92,26 @@ _writemultishot(){
   [[ ${#mono}        > 0 ]] && mono=1        || mono=0
   [[ ${#esxoptimize} > 0 ]] && esxoptimize=1 || esxoptimize=0
   :>$TMPFILE.multishotlog
-  _collect $selecteddir \
-					 $nfiles       \
-					 $nstartfile   \
-					 $normalize    \
-					 $sampleframes \
-					 $sampletrim   \
-					 $recursive    \
-					 $slice 
-#		if (( $slice == 1 )); then indir="/tmp/.slices"; else indir="/tmp/.collect"; fi
+  {
+    _collect "$selecteddir"  \
+             "$nfiles"       \
+             "$nstartfile"   \
+             "$normalize"    \
+             "$sampleframes" \
+             "$sampletrim"   \
+             "$recursive"    \
+             "$slice" 
+      if (( $slice == 1 )); then indir="/tmp/.slices"; else indir="/tmp/.collect"; fi
 #verrrry easy probably
-indir="/tmp/.collect"
-		_bundle  "$indir"       \
-						 "$outfile"     \
-						 "$nfiles"      \
-						 "$mono"        \
-						 "$pitchup"     \
-						 "$soxextra"    \
-						 "$sampletrim"  \
-						 "$normalize" 
-#2>&1 | while read line; do echo "$line"; echo "$line" >> $TMPFILE.multishotlog; done
+#indir="/tmp/.collect"
+      _bundle  "$indir"       \
+               "$outfile"     \
+               "$nfiles"      \
+               "$mono"        \
+               "$pitchup"     \
+               "$soxextra"    \
+               "$sampletrim"  \
+               "$normalize"   
+  } 2>&1 | while read line; do echo "$line"; echo "$line" >> $TMPFILE.multishotlog; done
 }
 

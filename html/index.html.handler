@@ -26,8 +26,8 @@ getdirs(){
 [[ ! -n $nfiles         ]] && nfiles=16
 [[ ! -n $nstartfile     ]] && nstartfile=0
 [[ ! -n $pitchup        ]] && pitchup="1.0"
-[[ ! -n $sampleframes   ]] && sampleframes=999999
-[[ ! -n $sampletrim     ]] && sampletrim="00:00.00 =00:00.20"
+[[ ! -n $sampleframes   ]] && sampleframes=99999999
+[[ ! -n $sampletrim     ]] && sampletrim="00:00:00.0 00:00:00.20"
 [[ ! $action == "write" ]] && [[ ! -n $normalize     ]] && normalize="checked='checked'"   || normalize="$(tocheckbox "$normalize")"
 [[ ! $action == "write" ]] && [[ ! -n $recursive     ]] && recursive="checked='checked'"   || recursive="$(tocheckbox "$recursive")"
 [[ ! $action == "write" ]] && [[ ! -n $mono          ]] && mono="checked='checked'"        || mono="$(tocheckbox "$mono")"

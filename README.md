@@ -79,7 +79,7 @@ following things are usually installed on any linux system:
 * nc (netcat)
 * a browser
 * bash
-* sox utilities 
+* sox utilities  (14.4.*)
 
 ### Credits ###
 

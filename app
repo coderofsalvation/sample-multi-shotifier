@@ -68,7 +68,8 @@ parseUrl(){
   CLIENT_URL="$(echo "$line" | sed "s/$method //g;s/ .*//g;s/?.*//g")"
   CLIENT_ARGS="$(echo "$line" | sed "s/.*?//g;s/ .*//g")"
   # turn getvars into variables
-  IFS='&'; for arg in $CLIENT_ARGS; do key="$(echo "${arg/=*/}" | urldecode )"; value="$(echo "${arg/*=/}" | urldecode)"; eval "$key=\"$value\""; done 
+  IFSOLD=$IFS; IFS='&'; for arg in $CLIENT_ARGS; do key="$(echo "${arg/=*/}" | urldecode )"; value="$(echo "${arg/*=/}" | urldecode)"; eval "$key=\"$value\""; done 
+  IFS=$IFSOLD;
 }
 
 onUrl(){
@@ -125,12 +126,13 @@ cleanup(){
 
 # smarty like template engine which executes inline bash in html / replaces variables with values 
 fetch(){
-  IFS=''; cat - | while read line; do 
+  IFSOLD=$IFS; IFS=''; cat - | while read line; do 
     for k in "${!args[@]}"; do [[ "$k" == "0" ]] && continue;
       value="$( echo "${args["$k"]}" | sed -e 's/[\/&]/\\&/g' | sed "s/'/\"/g" )"; eval "$k="$value";"
     done; 
     line="$(eval "echo \"$( echo "$line" | sed 's/"/\\"/g')\"")"; echo "$line" # process bash in snippet
   done
+  IFS=$IFSOLD;
 }
 
 trap cleanup SIGINT
