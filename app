@@ -69,7 +69,7 @@ parseUrl(){
   CLIENT_ARGS="$(echo "$line" | sed "s/.*?//g;s/ .*//g")"
   # turn getvars into variables
   IFSOLD=$IFS; IFS='&'; for arg in $CLIENT_ARGS; do key="$(echo "${arg/=*/}" | urldecode )"; value="$(echo "${arg/*=/}" | urldecode)"; eval "$key=\"$value\""; done 
-  IFS=$IFSOLD;
+  IFS=$IFSOLD
 }
 
 onUrl(){

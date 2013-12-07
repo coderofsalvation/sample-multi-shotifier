@@ -1,0 +1,55 @@
+#!/bin/bash 
+#
+# find mp3's, slice them up, and loop slices
+#
+# I made this just to make some unique samples from radiomaterial e.g.
+# instead of relying on commercial samplecd's which everybody is relying on
+#
+source loopcrossfade
+
+mkdir /tmp/slices /tmp/loops /tmp/loops.keep &>/dev/null
+rm /tmp/slices/* /tmp/loops/* &>/dev/null
+
+samples=47000
+skip=0
+skipsize=1000000
+begin=0
+end=0
+
+batch(){
+  [[ ! -f "$1" ]] && echo "file $1 does not exist" && exit 1
+  echo "converting $file to wav"
+  infile="/tmp/$(basename "$1").tmp.wav"
+  [[ ! -f "$infile" ]] && mpg123 -v -w "$infile" "$1"
+  [[ -n "$2" ]] && start=$2 || start=0
+  length="$(soxi "$infile" | grep Duration | cut -d' ' -f11 )"
+  for((i=0+start;end<length;i++)); do
+    ((begin=i*samples+skip))
+    ((end=$begin+$samples))
+    sox "$infile" /tmp/slices/$i.wav trim ="$begin"s ="$end"s
+    loop="$(loopcrossfade "/tmp/slices/$i.wav" 3 /tmp/loops)"
+    echo "$loop"; loopfile="$(echo "$loop" | sed 's/.* //g')"
+    play "$loopfile" repeat 2; 
+    read -p "wanna keep this loop? ([enter]=forget loop, [5]again, [2]fastforward, [1]keep loop, [+]nextfile) " key
+    [[ "$key" == "1" ]] && mv "$loopfile" /tmp/loops.keep
+    [[ "$key" == "2" ]] && ((skip+=$skipsize));
+    [[ "$key" == "+" ]] && break;
+    [[ "$key" == "5" ]] && ((i--));
+    rm "$loopfile";
+  done
+  echo "files are in /tmp/loops.keep"
+}
+
+rename(){
+  read -p "rename all files with X (or press ctrl-c to break) " name 
+  i=1;
+  cd /tmp/loops.keep; 
+  mkdir "$name"
+  ls /tmp/loops.keep | grep "\.wav" | while read file; do 
+    mv "$file" "$name/$name-$i.wav"
+    ((i++))
+  done
+  find | less
+}
+
+"$@"

@@ -4,7 +4,7 @@ TMPFILE="/tmp/.sample-multi-shotifier"
 
 # utility functions
 
-tocheckbox(){ echo "$1" | sed "s/on/checked='checked'/g"; }
+tocheckbox(){ [[ ${#1} > 0 ]] && echo "$1" | sed "s/.*/checked='checked'/g"; }
 
 getdirs(){
   cache="$( [[ -f $TMPFILE.rootdir ]] && cat $TMPFILE.rootdir )"
@@ -33,12 +33,12 @@ getdirs(){
 [[ ! $action == "write" ]] && [[ ! -n $mono          ]] && mono="checked='checked'"        || mono="$(tocheckbox "$mono")"
 [[ ! $action == "write" ]] && [[ ! -n $esxoptimize   ]] && esxoptimize="checked='checked'" || esxoptimize="$(tocheckbox "$esxoptimize")"
 [[ ! $action == "write" ]] && [[ ! -n $slice         ]] && slice="checked='checked'"       || slice="$(tocheckbox "$slice")"
+[[ ! $action == "write" ]] && [[ ! -n $padreverse         ]] && padreverse="checked='checked'"       || padreverse="$(tocheckbox "$padreverse")"
 [[ ! -n $soxextra      ]]  && soxextra="sox %s %s norm" #trim -2500s" #sox %s %s contrast 75"
 # sanity checks
 output="$( {
   which sox  &>/dev/null && echo "[OK] sox is installed" || echo "[ERROR] sox is not installed, please install"
   which vamp-simple-host &>/dev/null && echo "[OK] vamp is installed" || echo "[ERROR] vamp is not installed, slice will not work, please install vamp"
-  [[ -f "/usr/lib/ladspa/ladspa-rubberband.so" ]] && echo "[OK] rubberizer ladspa installed" || echo "[ERROR] please install steve harris plugins / rubberband"
   echo ""
 } )"
 

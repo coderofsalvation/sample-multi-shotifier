@@ -27,7 +27,6 @@ $(cat html/header.html 2>&1 | fetch )
             </p>
             <input type="submit" class="download-links" value="Generate"/>
             <a class="download-links" href="#" onclick="new Image().src = '/?action=play&outfile=$outfile&directory='+document.getElementById('directory').value+'&nfiles=$nfiles&nstartfile=$nstartfile'; return false;">Play multishot</a>
-            <a class="download-links" href="file://$outfile">Download</a><br><br>
       </div>
       <div class="unit one-of-two">
             <p class="well">
@@ -37,6 +36,7 @@ $(cat html/header.html 2>&1 | fetch )
               <label><a class="round-2 icontooltip" href="#" title="The electribe ESX usually adds 1250 samples in front of every sample. Turn this feature on if you want to have 128 samples tightly snapped to the 128 steps of your startposition knob.">?</a>Electribe ESX optimize</label><input type="checkbox" name="esxoptimize" $esxoptimize/> <br>
               <label><a class="round-2 icontooltip" href="#" title="Here you can add additional sox/ladspa effects. Examples: sox %s %s contrast 80, sox %s % ladspa /usr/lib/ladspa/someplugin.so">?</a>SOX extra</label><input type="text" name="soxextra" value="$soxextra"/><br>
               <label><a class="round-2 icontooltip" href="#" title="Turn this on if you want to process nested directories as well">?</a>Recurse into dirs</label><input name="recursive" type="checkbox" $recursive/> <br>
+              <label><a class="round-2 icontooltip" href="#" title="All samples need to have to same length, so instead of padding it with silence we can pad it with the reversed sound, (who knows it can be handy)">?</a>Pad with reversed sound</label><input name="padreverse" type="checkbox" $padreverse/> <br>
               <label><a class="round-2 icontooltip" href="#" title="This is where all samples eventually end up">?</a>Output file</label><input type="text" name="outfile" value="$outfile"/>
             </p>
       </div>
