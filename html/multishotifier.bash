@@ -49,18 +49,20 @@ padsample(){
 }
 
 # bundles all .wav files in a dir into one file, makes it mono, pitches up, does custom stuff, pads samples with silence, normalizes
-# <indir> <outfile.wav> <mono> <pitchup:1.0> <soxextra> <00:00:00.0 =00:00:00.40> <normalize>
+# <indir> <outfile.wav> <nfiles> <mono> <pitchup:1.0> <soxextra> <00:00:00.0 =00:00:00.40> <normalize> <esxpoptimize>
 _bundle(){
   indir="$1"; outfile="$2"; nfiles="$3"; mono="$4"; pitchup="$5"; soxextra="${6}"; trim="$7"; normalize="$8"; 
   esxoptimize="$9"; 
   echo "_bundle $indir $outfile $nfiles $mono $pitchup $soxextra $trim $normalize $esxoptimize"
-  [[ ${#mono} != 0 ]] && monoarg="-c 1"
+  (( mono == 1 )) && monoarg="-c 1"
   cd "$indir"
   rm *.padded.wav &>/dev/null
   ls *.wav | while read file; do padsample "$file" "$trim" "$normalize"; done
   if ls *.padded.wav &>/dev/null; then 
-	  files="$(ls *.padded.wav | head -n$nfiles )"
-    sox ${files} ${monoarg} $outfile speed "$pitchup" 
+	  #files="$(ls *.padded.wav | head -n$nfiles )"
+    files=( *.padded.wav );
+    echo sox ${files[@]:1:$nfiles} ${monoarg} $outfile speed "$pitchup" 
+    sox "${files[@]:0:$nfiles}" ${monoarg} $outfile speed "$pitchup" 
     extra="$( printf "$soxextra" "$outfile" "$outfile.wav")"; echo "$extra";
     ${extra}; mv "$outfile.wav" "$outfile" &>/dev/null
     echo "written $(echo "$files" | wc -l) samples to $outfile ($(stat -c%s "$outfile") bytes)"
