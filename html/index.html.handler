@@ -31,9 +31,9 @@ getdirs(){
 [[ ! $action == "write" ]] && [[ ! -n $normalize     ]] && normalize="checked='checked'"   || normalize="$(tocheckbox "$normalize")"
 [[ ! $action == "write" ]] && [[ ! -n $recursive     ]] && recursive="checked='checked'"   || recursive="$(tocheckbox "$recursive")"
 [[ ! $action == "write" ]] && [[ ! -n $mono          ]] && mono="checked='checked'"        || mono="$(tocheckbox "$mono")"
-[[ ! $action == "write" ]] && [[ ! -n $esxoptimize   ]] && esxoptimize="checked='checked'" || esxoptimize="$(tocheckbox "$esxoptimize")"
-[[ ! $action == "write" ]] && [[ ! -n $slice         ]] && slice="checked='checked'"       || slice="$(tocheckbox "$slice")"
-[[ ! $action == "write" ]] && [[ ! -n $padreverse         ]] && padreverse="checked='checked'"       || padreverse="$(tocheckbox "$padreverse")"
+[[ ! $action == "write" ]] && [[ ! -n $esxoptimize   ]] && esxoptimize=""                  || esxoptimize="$(tocheckbox "$esxoptimize")"
+[[ ! $action == "write" ]] && [[ ! -n $slice         ]] && slice=""                        || slice="$(tocheckbox "$slice")"
+[[ ! $action == "write" ]] && [[ ! -n $padreverse         ]] && padreverse=""              || padreverse="$(tocheckbox "$padreverse")"
 [[ ! -n $soxextra      ]]  && soxextra="sox %s %s norm" #trim -2500s" #sox %s %s contrast 75"
 # sanity checks
 output="$( {
