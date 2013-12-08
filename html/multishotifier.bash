@@ -36,7 +36,7 @@ padsample(){
   #echo "padding sample $inputfile to $trim"
   silencefile="/tmp/.collect/multishotsilence.$(echo "$trim" | sed 's/ /-/g').wav"
   (( $mono == 0 )) && channels="-c 2" || channels="-c 1" 
-  [[ $appendsilence != "0" ]] && silencepad="pad $appendsilence" || silencepad=""
+  [[ $appendsilence != "0" ]] && silencepad="pad 0 $appendsilence" || silencepad=""
   #[[ $fadeout != "0" ]] && fadeout="fadeout 0pad $fadeout" || silencepad=""
   [[ ! -f "$silencefile" ]] && sox -n -e signed -b 16 -r 44100 ${channels} "$silencefile" trim ${trim} 2>&1 # create silence file to enable exact padding
   if [[ ${#padreverse} > 0 ]]; then 
