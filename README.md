@@ -7,7 +7,10 @@ A Hack which expands your traditional hardware/software samplers using many-samp
 <img src="https://raw.github.com/coderofsalvation/sample-multi-shotifier/master/exampleoutput.png"/>
 
 *UPDATE*: added automatic slice detection/cutting support (think drumloops e.g.)
+
 *UPDATE*: added reversed padding option, pad with reversed sample instead of silence 
+
+*UPDATE*: added appending of silence after every shot (so samplers with autoslice will still function properly)
 
 ### Introduction ###
 

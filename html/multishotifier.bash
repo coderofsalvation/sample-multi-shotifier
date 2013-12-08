@@ -32,18 +32,20 @@ _collect(){
 # pad sample to length (fills with silence or cuts sample)
 # <input.wav> <00:00:00.00 =00:00:00.00s> <normalize>
 padsample(){
-  inputfile="$1"; trim="$2"; normalize="$3"; mono="$4"
+  inputfile="$1"; trim="$2"; normalize="$3"; mono="$4"; appendsilence="$5"; fadeout="$6"
   #echo "padding sample $inputfile to $trim"
   silencefile="/tmp/.collect/multishotsilence.$(echo "$trim" | sed 's/ /-/g').wav"
   (( $mono == 0 )) && channels="-c 2" || channels="-c 1" 
+  [[ $appendsilence != "0" ]] && silencepad="pad $appendsilence" || silencepad=""
+  #[[ $fadeout != "0" ]] && fadeout="fadeout 0pad $fadeout" || silencepad=""
   [[ ! -f "$silencefile" ]] && sox -n -e signed -b 16 -r 44100 ${channels} "$silencefile" trim ${trim} 2>&1 # create silence file to enable exact padding
   if [[ ${#padreverse} > 0 ]]; then 
     sox "$inputfile" "$inputfile.paddedreversed.wav" repeat 4 reverse 
     sox "$inputfile" "$inputfile.paddedreversed.wav" "$inputfile.paddedreversedanddry.wav" 
-    sox -m "$silencefile" "$inputfile.paddedreversedanddry.wav" "$inputfile.padded.wav" trim ${trim}  # pad wav
+    sox -m "$silencefile" "$inputfile.paddedreversedanddry.wav" "$inputfile.padded.wav" trim ${trim} ${silencepad} # pad wav
     rm "$inputfile.paddedreversedanddry.wav"
   else
-    sox -m "$silencefile" "$inputfile" "$inputfile.padded.wav" trim ${trim}  # pad wav
+    sox -m "$silencefile" "$inputfile" "$inputfile.padded.wav" trim ${trim} ${silencepad}  # pad wav
   fi
   if [[ ${#normalize} != 0 ]]; then 
     sox "$inputfile.padded.wav" "$inputfile.paddednorm.wav" norm 
@@ -55,12 +57,12 @@ padsample(){
 # <indir> <outfile.wav> <nfiles> <mono> <pitchup:1.0> <soxextra> <00:00:00.0 =00:00:00.40> <normalize> <esxpoptimize>
 _bundle(){
   indir="$1"; outfile="$2"; nfiles="$3"; mono="$4"; pitchup="$5"; soxextra="${6}"; trim="$7"; normalize="$8"; 
-  esxoptimize="$9"; 
-  echo "_bundle $indir $outfile $nfiles $mono $pitchup $soxextra $trim $normalize $esxoptimize"
+  appendsilence="$9"; fadeout="${10}"
+  echo "_bundle $indir $outfile $nfiles $mono $pitchup $soxextra $trim $normalize $appendsilence"
   (( $mono == 0 )) && channels="-c 2" && channels="-c 1"
   cd "$indir"
   rm *.padded.wav &>/dev/null
-  ls *.wav | while read file; do padsample "$file" "$trim" "$normalize" "$mono"; done
+  ls *.wav | while read file; do padsample "$file" "$trim" "$normalize" "$mono" "$appendsilence" "$fadeout"; done
   if ls *.padded.wav &>/dev/null; then 
     files=( *.padded.wav );
     files=("${files[@]:0:$nfiles}") # create subset of nfiles length
@@ -72,14 +74,14 @@ _bundle(){
     echo "written ${#files[@]} samples to $outfile ($(stat -c%s "$outfile") bytes)"
   else echo "no wavfiles found to glue to output file"; fi
   (( ${#files[@]} != $nfiles )) && echo "WARNING: bundled ${#files[@]} instead of $nfiles files..alignment will not be perfect"
-  if (( $esxoptimize > 0 )); then optimizeESX "$outfile" "$pitchup" "$mono"; fi
+  if (( $appendsilence > 0 )); then optimizeESX "$outfile" "$pitchup" "$mono"; fi
   rm *.padded.wav
 }
 
 optimizeESX(){
   file="$1"; pitch="$2"; mono="$3"; padding=1250;
   padding=$( echo "$padding*$pitch" | bc | xargs printf "%1.0f" );
-  echo "esxoptimize: trimming $padding samples to ensure proper startposition-snap"
+  echo "appendsilence: trimming $padding samples to ensure proper startposition-snap"
   sox "$file" "$file.wav" trim "$padding"s && mv "$file.wav" "$file"
 }
 
@@ -115,7 +117,6 @@ _writemultishot(){
   [[ ${#normalize}   > 0 ]] && _normalize=1   || _normalize=0
   [[ ${#recursive}   > 0 ]] && _recursive=1   || _recursive=0
   [[ ${#mono}        > 0 ]] && _mono=1        || _mono=0
-  [[ ${#esxoptimize} > 0 ]] && _esxoptimize=1 || _esxoptimize=0
   [[ ${#padreverse} > 0  ]] && _padreverse=1 || _padreverse=0
   :>$TMPFILE.multishotlog
   {
@@ -136,7 +137,8 @@ _writemultishot(){
                "$soxextra"     \
                "$sampletrim"   \
                "$_normalize"   \
-               "$_esxoptimize" 
+               "$appendsilence"\
+               "$fadeout"   
   } 2>&1 | while read line; do echo "$line"; echo "$line" >> $TMPFILE.multishotlog; done
 }
 

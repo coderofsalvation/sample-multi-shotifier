@@ -28,10 +28,11 @@ getdirs(){
 [[ ! -n $pitchup        ]] && pitchup="1.0"
 [[ ! -n $sampleframes   ]] && sampleframes=99999999
 [[ ! -n $sampletrim     ]] && sampletrim="00:00:00.0 00:00:00.20"
+[[ ! -n $appendsilence  ]] && appendsilence="0.03"
+[[ ! -n $fadeout  ]] && fadeout="0.02"
 [[ ! $action == "write" ]] && [[ ! -n $normalize     ]] && normalize="checked='checked'"   || normalize="$(tocheckbox "$normalize")"
 [[ ! $action == "write" ]] && [[ ! -n $recursive     ]] && recursive="checked='checked'"   || recursive="$(tocheckbox "$recursive")"
 [[ ! $action == "write" ]] && [[ ! -n $mono          ]] && mono="checked='checked'"        || mono="$(tocheckbox "$mono")"
-[[ ! $action == "write" ]] && [[ ! -n $esxoptimize   ]] && esxoptimize=""                  || esxoptimize="$(tocheckbox "$esxoptimize")"
 [[ ! $action == "write" ]] && [[ ! -n $slice         ]] && slice=""                        || slice="$(tocheckbox "$slice")"
 [[ ! $action == "write" ]] && [[ ! -n $padreverse         ]] && padreverse=""              || padreverse="$(tocheckbox "$padreverse")"
 [[ ! -n $soxextra      ]]  && soxextra="sox %s %s norm" #trim -2500s" #sox %s %s contrast 75"
