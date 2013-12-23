@@ -74,7 +74,7 @@ _bundle(){
     echo "written ${#files[@]} samples to $outfile ($(stat -c%s "$outfile") bytes)"
   else echo "no wavfiles found to glue to output file"; fi
   (( ${#files[@]} != $nfiles )) && echo "WARNING: bundled ${#files[@]} instead of $nfiles files..alignment will not be perfect"
-  if (( $appendsilence > 0 )); then optimizeESX "$outfile" "$pitchup" "$mono"; fi
+#  if [[ $appendsilence > 0 )); then optimizeESX "$outfile" "$pitchup" "$mono"; fi
   rm *.padded.wav
 }
 
